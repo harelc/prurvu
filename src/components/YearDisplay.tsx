@@ -49,9 +49,7 @@ export function YearDisplay({ year, population, tfr, targetTFR, comparePopulatio
   const medianAge = getMedianAge(population);
   const depRatio = getDependencyRatio(population);
 
-  const tfrLabel = targetTFR != null
-    ? `${tfr.toFixed(2)} \u2192 ${targetTFR.toFixed(2)}`
-    : tfr.toFixed(2);
+  const tfrLabel = tfr.toFixed(2);
 
   const hasCompare = !!comparePopulation;
   const cmpPop = comparePopulation ? getTotalPopulation(comparePopulation) : 0;
@@ -74,6 +72,7 @@ export function YearDisplay({ year, population, tfr, targetTFR, comparePopulatio
       <Stat
         label="TFR"
         value={tfrLabel}
+        subtitle={targetTFR != null && Math.abs(targetTFR - tfr) > 0.005 ? `→ ${targetTFR.toFixed(2)}` : undefined}
         compare={hasCompare && compareTFR != null ? compareTFR.toFixed(2) : undefined}
       />
       <Stat
@@ -86,13 +85,16 @@ export function YearDisplay({ year, population, tfr, targetTFR, comparePopulatio
   );
 }
 
-function Stat({ label, value, compare, info }: { label: string; value: string; compare?: string; info?: string }) {
+function Stat({ label, value, subtitle, compare, info }: { label: string; value: string; subtitle?: string; compare?: string; info?: string }) {
   return (
     <div>
       <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
         {label}{info && <InfoTip text={info} />}
       </div>
-      <div className="text-base font-bold tabular-nums text-slate-800">{value}</div>
+      <div className="text-base font-bold tabular-nums text-slate-800">
+        {value}
+        {subtitle && <span className="ml-1 text-xs font-semibold text-slate-400">{subtitle}</span>}
+      </div>
       {compare != null && (
         <div className="text-xs font-semibold tabular-nums text-emerald-600">B: {compare}</div>
       )}

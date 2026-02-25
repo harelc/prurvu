@@ -61,7 +61,7 @@ export function DualAxisChart({ popData, tfrData, currentYear, baseYear, maxYear
     const padLeft = 52;
     const padRight = 42;
     const padTop = 12;
-    const padBottom = 24;
+    const padBottom = 36;
     const plotW = w - padLeft - padRight;
     const plotH = h - padTop - padBottom;
 

@@ -9,13 +9,13 @@ Interactive population pyramid simulator powered by **UN World Population Prospe
 ## Features
 
 ### Core Simulation
-- **96 countries** with real demographic data (population by age/sex, fertility, mortality)
+- **69 countries** with pre-cached demographic data (population by age/sex, fertility, mortality)
 - **Cohort-component projection** engine — births, deaths, and aging each year
 - **Birth calibration** — corrects for migration and mid-year timing so simulated age-0 matches actual data
 - **200-year projection** horizon (2024–2224)
 
 ### Interactive Controls
-- **Modified TFR** — adjust total fertility rate with optional gradual convergence
+- **Target TFR** — set target fertility rate with configurable time to reach it
 - **Mortality change** — scale all death rates -50% to +50%
 - **Sex ratio at birth** — adjust male-to-female newborn ratio
 - **Net migration** — Rogers-Castro age profile, -2% to +2% of population per year
@@ -35,7 +35,7 @@ Interactive population pyramid simulator powered by **UN World Population Prospe
 - A/B tab selector to control each scenario independently
 
 ### Share & Export
-- **Shareable URL** — all parameters encoded in the URL hash
+- **Shareable URL** — all parameters including simulation year encoded in the URL hash
 - **PNG export** — pyramid image with country name, stats, simulation parameters, and site credit
 - **CSV export** — population by age or time series data
 
@@ -59,7 +59,7 @@ npm install
 npm run dev
 ```
 
-For live API access (optional — cached data is bundled for 40 countries):
+For live API access (optional — cached data is bundled for 69 countries):
 
 ```bash
 # Get a token at https://population.un.org/dataportal/about/dataapi
@@ -84,7 +84,7 @@ Each simulation step:
 4. **Migration** — distribute net migrants by Rogers-Castro age profile, split 50/50 male/female
 5. **Split** — divide newborns by sex ratio into male/female age-0 cohort
 
-When TFR convergence is set to N years, the effective TFR blends exponentially toward the target, reaching ~95% in N years.
+When "Time to Target" is set to N years, the effective TFR blends exponentially toward the target TFR, reaching ~95% in N years (default: 50 years).
 
 ## Data Sources
 

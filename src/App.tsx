@@ -82,7 +82,7 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(0.25);
   const [userTFR, setUserTFR] = useState<number | null>(null);
-  const [tfrConvergenceYears, setTfrConvergenceYears] = useState(0);
+  const [tfrConvergenceYears, setTfrConvergenceYears] = useState(50);
   const [mortalityMultiplier, setMortalityMultiplier] = useState(1);
   const [userSexRatio, setUserSexRatio] = useState<number | null>(null);
   const [mortalityImprovementRate, setMortalityImprovementRate] = useState(0);
@@ -175,7 +175,7 @@ export default function App() {
     setSnapshotCache(new Map());
     setError(null);
     setUserTFR(null);
-    setTfrConvergenceYears(0);
+    setTfrConvergenceYears(50);
     setMortalityMultiplier(1);
     setUserSexRatio(null);
     setMortalityImprovementRate(0);
@@ -210,7 +210,7 @@ export default function App() {
       // Apply pending hash params if any
       const pending = pendingHashRef.current;
       if (pending) {
-        pendingHashRef.current = null;
+        // Don't clear ref — React strict mode may re-run this
         if (pending.tfr != null) setUserTFR(pending.tfr);
         if (pending.convYears != null) setTfrConvergenceYears(pending.convYears);
         if (pending.mort != null) setMortalityMultiplier(pending.mort);
@@ -224,7 +224,9 @@ export default function App() {
             userTFR: pending.tfr,
             mortalityMultiplier: pending.mort ?? 1,
             userSexRatio: pending.sexRatio,
-            tfrConvergenceRate: pending.convYears ? 1 - Math.pow(0.05, 1 / pending.convYears) : 1,
+            tfrConvergenceRate: pending.convYears != null && pending.convYears > 0
+              ? 1 - Math.pow(0.05, 1 / pending.convYears)
+              : (50 > 0 ? 1 - Math.pow(0.05, 1 / 50) : 1),
             mortalityImprovementRate: pending.mortImprove ?? 0,
             netMigrationRate: pending.migration ?? 0,
             asfrShiftYears: pending.asfrShift ?? 0,
@@ -234,6 +236,8 @@ export default function App() {
           setPopHistory(ph);
           setTfrHistory(th);
         }
+        // Clear ref after applying (safe even with strict mode double-invoke since we apply idempotently)
+        pendingHashRef.current = null;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -590,11 +594,24 @@ export default function App() {
   }, [country, currentSnapshot, userTFR, tfrConvergenceYears, mortalityMultiplier, userSexRatio, mortalityImprovementRate, netMigrationRate, asfrShiftYears]);
 
   const handleCopyLink = useCallback(() => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    if (!country || !currentSnapshot) return;
+    const hash = encodeStateToHash({
+      iso3: country.iso3,
+      years: currentSnapshot.year - BASE_YEAR,
+      tfr: userTFR,
+      convYears: tfrConvergenceYears,
+      mort: mortalityMultiplier,
+      sexRatio: userSexRatio,
+      mortImprove: mortalityImprovementRate,
+      migration: netMigrationRate,
+      asfrShift: asfrShiftYears,
+    });
+    const url = window.location.origin + window.location.pathname + hash;
+    navigator.clipboard.writeText(url).then(() => {
       setCopyToast(true);
       setTimeout(() => setCopyToast(false), 2000);
     });
-  }, []);
+  }, [country, currentSnapshot, userTFR, tfrConvergenceYears, mortalityMultiplier, userSexRatio, mortalityImprovementRate, netMigrationRate, asfrShiftYears]);
 
   const handleExportPNG = useCallback(() => {
     if (pyramidRef.current && currentSnapshot) {
@@ -651,19 +668,11 @@ export default function App() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {country && (
-            <button
-              onClick={handleCopyLink}
-              className="relative rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
-            >
-              {copyToast ? 'Copied!' : 'Copy link'}
-            </button>
-          )}
           <button
             onClick={() => setShowTutorial(true)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
+            className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 hover:border-blue-300 transition-colors"
           >
-            How it works
+            📖 How it works
           </button>
         </div>
       </header>
@@ -760,6 +769,13 @@ export default function App() {
                       title="Export population data as CSV"
                     >
                       CSV
+                    </button>
+                    <button
+                      onClick={handleCopyLink}
+                      className="rounded bg-white/90 px-2 py-1 text-[10px] hover:bg-slate-100 transition-colors"
+                      title={copyToast ? 'Copied!' : 'Copy shareable link'}
+                    >
+                      {copyToast ? '✓' : '🔗'}
                     </button>
                   </div>
                   <Pyramid

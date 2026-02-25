@@ -116,7 +116,6 @@ export function Controls({
   const [search, setSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sortMode, setSortMode] = useState<'region' | 'alpha'>('region');
-  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const filteredGroups = useMemo(() => {
     const q = search.toLowerCase();
@@ -270,10 +269,17 @@ export function Controls({
               Simulation {atMaxYear && <span className="text-amber-500 normal-case">(max year reached)</span>}
             </label>
             <div className="flex items-center gap-1.5">
-              <IconButton onClick={onReset} disabled={year === baseYear || loading} title="Reset (R)">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </IconButton>
-              <IconButton onClick={onStepBack} disabled={year <= baseYear || playing || loading} title="Step back (\u2190)">
+              <button
+                onClick={onReset}
+                disabled={year === baseYear || loading}
+                title="Reset (R)"
+                className="rounded-lg border border-red-200 bg-red-50 p-2 text-red-500 shadow-sm hover:bg-red-100 hover:text-red-700 transition-colors disabled:opacity-30"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+              <IconButton onClick={onStepBack} disabled={year <= baseYear || playing || loading} title="Step back (←)">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </IconButton>
               <button
@@ -288,7 +294,7 @@ export function Controls({
               >
                 {playing ? 'Pause' : 'Play'}
               </button>
-              <IconButton onClick={onStepForward} disabled={playing || loading || atMaxYear} title="Step forward (\u2192)">
+              <IconButton onClick={onStepForward} disabled={playing || loading || atMaxYear} title="Step forward (→)">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </IconButton>
             </div>
@@ -347,10 +353,10 @@ export function Controls({
             </div>
           </div>
 
-          {/* Modified TFR Slider */}
+          {/* Target TFR Slider */}
           <div>
             <label className="mb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              <span className="flex items-center">Modified TFR<InfoTip text="Total Fertility Rate: the average number of children a woman would have over her lifetime. 2.1 is replacement level. All age-specific fertility rates (ASFR) are scaled uniformly to match this target." /></span>
+              <span className="flex items-center">Target TFR<InfoTip text="The TFR value that will be reached after the 'Time to Target' period. The effective TFR blends gradually from the country's baseline toward this value. 2.1 is replacement level." /></span>
               <span className="text-sm font-bold tabular-nums text-blue-600">{tfr.toFixed(2)}</span>
             </label>
             <input
@@ -375,10 +381,10 @@ export function Controls({
             </div>
           </div>
 
-          {/* TFR Convergence in Years */}
+          {/* Time to Target */}
           <div>
             <label className="mb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              <span className="flex items-center">TFR Convergence<InfoTip text="How many years for the effective TFR to reach the target. 'Instant' applies the target immediately. Higher values simulate a gradual demographic transition (95% of the gap closed in N years)." /></span>
+              <span className="flex items-center">Time to Target<InfoTip text="How many years for the effective TFR to reach the target. 'Instant' applies the target immediately. Higher values simulate a gradual demographic transition (95% of the gap closed in N years)." /></span>
               <span className="text-sm font-bold tabular-nums text-blue-600">
                 {tfrConvergenceYears === 0 ? 'Instant' : `${tfrConvergenceYears} yr`}
               </span>
@@ -386,7 +392,7 @@ export function Controls({
             <input
               type="range"
               min="0"
-              max="100"
+              max="200"
               step="1"
               value={tfrConvergenceYears}
               onChange={e => onTFRConvergenceYearsChange(parseInt(e.target.value))}
@@ -457,20 +463,8 @@ export function Controls({
             </div>
           </div>
 
-          {/* Advanced Parameters (collapsible) */}
-          <div className="border-t border-slate-200 pt-3">
-            <button
-              onClick={() => setAdvancedOpen(!advancedOpen)}
-              className="flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <span>Advanced Parameters</span>
-              <svg className={`h-3.5 w-3.5 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {advancedOpen && (
-              <div className="mt-3 space-y-4">
+          {/* Advanced Parameters */}
+          <div className="border-t border-slate-200 pt-3 space-y-4">
                 {/* Net Migration Rate */}
                 <div>
                   <label className="mb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -528,8 +522,6 @@ export function Controls({
                     <span>+10 yr</span>
                   </div>
                 </div>
-              </div>
-            )}
           </div>
         </>
       )}
