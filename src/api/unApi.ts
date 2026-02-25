@@ -13,16 +13,14 @@ type CachedEntry = {
   birthCalibrationFactor?: number;
 };
 
+import rawCachedData from '../data/cached-data.json';
+
 let cachedData: Record<string, CachedEntry> | null = null;
-let cacheLoadAttempted = false;
 
 async function loadCache(): Promise<Record<string, CachedEntry> | null> {
-  if (cacheLoadAttempted) return cachedData;
-  cacheLoadAttempted = true;
+  if (cachedData) return cachedData;
   try {
-    const path = '../data/cached-data.json';
-    const mod = await import(/* @vite-ignore */ path);
-    cachedData = mod.default as Record<string, CachedEntry>;
+    cachedData = rawCachedData as Record<string, CachedEntry>;
   } catch {
     // No cached data available
   }
