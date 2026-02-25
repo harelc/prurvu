@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:population.un.org)",
+      "WebSearch",
+      "Bash(curl:*)",
+      "Bash(npm create:*)",
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(gh repo:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(git init:*)",
+      "Bash(git add -A && git status 2>&1)"
+    ]
+  }
+}
