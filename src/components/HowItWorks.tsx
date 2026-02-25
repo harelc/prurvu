@@ -56,14 +56,16 @@ export function HowItWorks({ onClose }: HowItWorksProps) {
             <h3 className="text-base font-bold text-slate-800 mb-2">Step 1: Deaths (Survival)</h3>
             <p>
               For each single-year age <Eq tex="a" /> (0 to 100) and sex <Eq tex="s" />, we apply the
-              age-specific mortality rate <Eq tex="m(a,s)" /> to compute survivors:
+              age-specific mortality rate <Eq tex="m(a,s)" /> scaled by the mortality multiplier <Eq tex="\mu" /> to compute survivors:
             </p>
             <div className="my-3 rounded-lg bg-slate-50 px-4 py-3 overflow-x-auto">
-              <Eq tex="\text{Survivors}(a, s) = P(a, s) \times \bigl(1 - m(a, s)\bigr)" display />
+              <Eq tex="\text{Survivors}(a, s) = P(a, s) \times \bigl(1 - \min(\mu \cdot m(a, s),\; 1)\bigr)" display />
             </div>
             <p>
               where <Eq tex="P(a,s)" /> is the population at age <Eq tex="a" /> and sex <Eq tex="s" />,
-              and <Eq tex="m(a,s)" /> is the central death rate from the UN life tables (indicator 80).
+              <Eq tex="m(a,s)" /> is the central death rate from the UN life tables (indicator 80),
+              and <Eq tex="\mu \in [0.5, 1.5]" /> is the user-adjustable mortality multiplier (default 1).
+              Lower <Eq tex="\mu" /> means lower mortality (longer life expectancy).
             </p>
           </section>
 
@@ -90,16 +92,18 @@ export function HowItWorks({ onClose }: HowItWorksProps) {
               expressed per 1,000 women per year. For each group <Eq tex="[x, x+5)" />:
             </p>
             <div className="my-3 rounded-lg bg-slate-50 px-4 py-3 overflow-x-auto">
-              <Eq tex="B_x = \text{ASFR}_x \times \frac{1}{1000} \times \sum_{a=x}^{x+4} P(a, \text{female})" display />
+              <Eq tex="B_x = \text{ASFR}'_x \times \frac{1}{1000} \times \sum_{a=x}^{x+4} P(a, \text{female})" display />
             </div>
             <p>
-              Total births:
+              Total births are multiplied by a <strong>birth calibration factor</strong> <Eq tex="k" /> that
+              corrects for net infant migration and mid-year timing effects. This factor is computed once from
+              the base year by comparing the actual age-0 cohort to the ASFR-simulated births:
             </p>
             <div className="my-3 rounded-lg bg-slate-50 px-4 py-3 overflow-x-auto">
-              <Eq tex="B = \sum_{x \in \{15,20,25,30,35,40,45\}} B_x" display />
+              <Eq tex="B = k \cdot \sum_{x \in \{15,20,25,30,35,40,45\}} B_x" display />
             </div>
             <p>
-              Births are split by sex using the sex ratio at birth <Eq tex="r" /> (males per female):
+              Births are split by sex using the sex ratio at birth <Eq tex="r" /> (males per female, adjustable):
             </p>
             <div className="my-3 rounded-lg bg-slate-50 px-4 py-3 overflow-x-auto">
               <Eq tex="P'(0, \text{male}) = B \cdot \frac{r}{1+r}, \qquad P'(0, \text{female}) = B \cdot \frac{1}{1+r}" display />
@@ -107,7 +111,7 @@ export function HowItWorks({ onClose }: HowItWorksProps) {
           </section>
 
           <section>
-            <h3 className="text-base font-bold text-slate-800 mb-2">TFR Scaling (What-If)</h3>
+            <h3 className="text-base font-bold text-slate-800 mb-2">TFR Scaling & Convergence</h3>
             <p>
               The Total Fertility Rate is the sum of all age-specific rates across the childbearing span:
             </p>
@@ -115,11 +119,25 @@ export function HowItWorks({ onClose }: HowItWorksProps) {
               <Eq tex="\text{TFR} = \sum_x \text{ASFR}_x \times \frac{5}{1000}" display />
             </div>
             <p>
-              When you adjust the TFR slider to a user value <Eq tex="\text{TFR}^*" />,
-              all ASFR values are uniformly scaled:
+              When you set a target TFR <Eq tex="\text{TFR}^*" /> via the Modified TFR slider,
+              the effective TFR used each year depends on the <strong>convergence setting</strong>.
+            </p>
+            <p className="mt-2">
+              With convergence set to <Eq tex="N" /> years, the effective TFR blends exponentially toward the target.
+              The convergence rate <Eq tex="\alpha" /> is chosen so that 95% of the gap is closed in <Eq tex="N" /> years:
             </p>
             <div className="my-3 rounded-lg bg-slate-50 px-4 py-3 overflow-x-auto">
-              <Eq tex="\text{ASFR}'_x = \text{ASFR}_x \times \frac{\text{TFR}^*}{\text{TFR}_{\text{base}}}" display />
+              <Eq tex="\alpha = 1 - 0.05^{1/N}" display />
+            </div>
+            <div className="my-3 rounded-lg bg-slate-50 px-4 py-3 overflow-x-auto">
+              <Eq tex="\text{TFR}_{\text{eff}}(t+1) = \text{TFR}_{\text{eff}}(t) + \alpha \cdot \bigl(\text{TFR}^* - \text{TFR}_{\text{eff}}(t)\bigr)" display />
+            </div>
+            <p>
+              When convergence is set to "Instant" (<Eq tex="N=0" />), the effective TFR jumps immediately to <Eq tex="\text{TFR}^*" />.
+              All ASFR values are then uniformly scaled:
+            </p>
+            <div className="my-3 rounded-lg bg-slate-50 px-4 py-3 overflow-x-auto">
+              <Eq tex="\text{ASFR}'_x = \text{ASFR}_x \times \frac{\text{TFR}_{\text{eff}}}{\text{TFR}_{\text{base}}}" display />
             </div>
             <p>
               This preserves the age pattern of fertility while changing the overall level.
@@ -141,10 +159,20 @@ export function HowItWorks({ onClose }: HowItWorksProps) {
           </section>
 
           <section>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Visual Indicators</h3>
+            <ul className="list-disc ml-5 space-y-1.5">
+              <li><strong>Gender excess</strong>: where one sex outnumbers the other at a given age, the excess portion is highlighted in a brighter shade on the pyramid</li>
+              <li><strong>Future-born line</strong>: a dashed red line marks the boundary between cohorts that existed at the base year and those born during the simulation</li>
+              <li><strong>Age / birth year</strong>: the center axis shows both age and year of birth for orientation</li>
+              <li><strong>Dual-axis chart</strong>: tracks total population (left axis, blue) and effective TFR (right axis, orange) over simulation time. A dashed line at TFR 2.1 marks replacement level</li>
+            </ul>
+          </section>
+
+          <section>
             <h3 className="text-base font-bold text-slate-800 mb-2">Limitations</h3>
             <ul className="list-disc ml-5 space-y-1.5">
-              <li>Migration is not modeled — only natural change (births minus deaths)</li>
-              <li>Mortality and ASFR age schedules are held constant from the base year</li>
+              <li>Migration is not modeled — the birth calibration factor partially compensates for infant migration but not for other ages</li>
+              <li>Mortality and ASFR age schedules are held constant from the base year (only the level changes, not the shape)</li>
               <li>The open-ended age group (100+) is simplified</li>
               <li>Results diverge further from UN projections over longer time horizons</li>
             </ul>
