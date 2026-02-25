@@ -93,6 +93,7 @@ export default function App() {
   const [tfrHistory, setTfrHistory] = useState<TimeSeriesPoint[]>([]);
   const showMomentum = true; // always highlight childbearing age
   const [copyToast, setCopyToast] = useState(false);
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [cachedCountryIds, setCachedCountryIds] = useState<Set<number>>(new Set());
 
   // Compare mode
@@ -553,6 +554,27 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [currentSnapshot, playing, handleStepForward, handleStepBack, handleReset]);
 
+  // Visitor counter on mount
+  useEffect(() => {
+    const STORAGE_KEY = 'prurvu_visit_counted';
+    const API_NS = 'agepyramid';
+    const API_KEY = 'page-visits';
+    const alreadyCounted = sessionStorage.getItem(STORAGE_KEY);
+    const endpoint = alreadyCounted
+      ? `https://api.counterapi.dev/v1/${API_NS}/${API_KEY}/`
+      : `https://api.counterapi.dev/v1/${API_NS}/${API_KEY}/up`;
+    fetch(endpoint)
+      .then(r => r.json())
+      .then(data => {
+        const count = data.count || data.value || 0;
+        if (count > 0) {
+          setVisitorCount(count);
+          if (!alreadyCounted) sessionStorage.setItem(STORAGE_KEY, '1');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Load cached country IDs on mount
   useEffect(() => {
     getCachedCountryIds().then(setCachedCountryIds);
@@ -840,6 +862,12 @@ export default function App() {
             <img src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg" alt="" className="h-3.5 w-3.5 inline-block align-middle" />
             <span className="align-middle">Buy me a coffee</span>
           </a>
+          {visitorCount != null && (
+            <>
+              <span>|</span>
+              <span className="tabular-nums">{visitorCount.toLocaleString()} visitors</span>
+            </>
+          )}
         </p>
       </footer>
 
