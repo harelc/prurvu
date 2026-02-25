@@ -775,7 +775,7 @@ export default function App() {
 
                 {/* Right panel: Dual-axis chart + ASFR histogram */}
                 <div className="flex-[2] min-w-0 flex flex-col gap-3 overflow-hidden">
-                  <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-3 shadow-sm min-h-0 overflow-hidden">
+                  <div className="flex-[2] rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-3 shadow-sm min-h-0 overflow-hidden">
                     <div className="flex justify-end mb-1">
                       <button
                         onClick={handleExportTimeSeries}
@@ -796,7 +796,7 @@ export default function App() {
                     />
                   </div>
                   {baseSnapshot && effectiveASFR.length > 0 && (
-                    <div className="shrink-0 h-32 rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-3 shadow-sm">
+                    <div className="flex-1 min-h-[10rem] rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-3 shadow-sm">
                       <ASFRChart asfr={effectiveASFR} />
                     </div>
                   )}

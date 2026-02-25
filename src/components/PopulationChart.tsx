@@ -61,7 +61,7 @@ export function DualAxisChart({ popData, tfrData, currentYear, baseYear, maxYear
     const padLeft = 52;
     const padRight = 42;
     const padTop = 12;
-    const padBottom = 30;
+    const padBottom = 24;
     const plotW = w - padLeft - padRight;
     const plotH = h - padTop - padBottom;
 
@@ -118,18 +118,32 @@ export function DualAxisChart({ popData, tfrData, currentYear, baseYear, maxYear
       ctx.fillText(v.toFixed(1), padLeft + plotW + 5, y + 3);
     }
 
-    // X axis labels
-    ctx.fillStyle = '#94a3b8';
+    // X axis line
+    ctx.beginPath();
+    ctx.moveTo(padLeft, padTop + plotH);
+    ctx.lineTo(padLeft + plotW, padTop + plotH);
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // X axis labels — every 50 years
+    ctx.fillStyle = '#64748b';
     ctx.font = '9px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    const baseY = h - 4;
-    ctx.fillText(String(minYear), xScale(minYear), baseY);
-    if (maxYear > minYear) {
-      ctx.fillText(String(maxYear), xScale(maxYear), baseY);
-      const midYear = Math.round((minYear + maxYear) / 2);
-      if (maxYear - minYear > 6) {
-        ctx.fillText(String(midYear), xScale(midYear), baseY);
-      }
+    const labelY = padTop + plotH + 16;
+    const span = fixedMaxYear - minYear;
+    const step = span > 150 ? 50 : span > 60 ? 25 : span > 20 ? 10 : 5;
+    for (let yr = minYear; yr <= fixedMaxYear; yr += step) {
+      const x = xScale(yr);
+      // Tick mark
+      ctx.beginPath();
+      ctx.moveTo(x, padTop + plotH);
+      ctx.lineTo(x, padTop + plotH + 4);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // Label
+      ctx.fillText(String(yr), x, labelY);
     }
 
     // Helper to draw line
