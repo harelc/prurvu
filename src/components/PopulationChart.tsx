@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 export interface TimeSeriesPoint {
   year: number;
@@ -9,6 +9,10 @@ interface DualAxisChartProps {
   popData: TimeSeriesPoint[];
   tfrData: TimeSeriesPoint[];
   currentYear: number;
+  baseYear: number;
+  maxYear: number;
+  popDataB?: TimeSeriesPoint[];
+  tfrDataB?: TimeSeriesPoint[];
 }
 
 function formatPop(n: number): string {
@@ -18,8 +22,25 @@ function formatPop(n: number): string {
   return Math.round(n).toString();
 }
 
-export function DualAxisChart({ popData, tfrData, currentYear }: DualAxisChartProps) {
+export function DualAxisChart({ popData, tfrData, currentYear, baseYear, maxYear, popDataB, tfrDataB }: DualAxisChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
+
+  // Watch for container resize (browser zoom, layout changes)
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      setCanvasSize(prev =>
+        prev.w === Math.round(width) && prev.h === Math.round(height)
+          ? prev
+          : { w: Math.round(width), h: Math.round(height) }
+      );
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -46,29 +67,28 @@ export function DualAxisChart({ popData, tfrData, currentYear }: DualAxisChartPr
 
     ctx.clearRect(0, 0, w, h);
 
-    // Compute ranges
-    const allYears = popData.map(d => d.year);
-    const minYear = Math.min(...allYears);
-    const maxYear = Math.max(...allYears);
+    // Fixed X axis range
+    const minYear = baseYear;
+    const fixedMaxYear = maxYear;
 
-    const popVals = popData.map(d => d.value);
-    const rawPopMax = Math.max(...popVals);
-    // Zero-based population axis
+    const allPopVals = [...popData.map(d => d.value), ...(popDataB?.map(d => d.value) ?? [])];
+    const rawPopMax = Math.max(...allPopVals);
     const popMin = 0;
     const popMax = rawPopMax * 1.1;
 
-    // Fixed TFR axis range
     const tfrMin = 0.7;
     const tfrMax = 5;
 
-    const xScale = (year: number) => padLeft + ((year - minYear) / Math.max(maxYear - minYear, 1)) * plotW;
+    const xScale = (year: number) => padLeft + ((year - minYear) / Math.max(fixedMaxYear - minYear, 1)) * plotW;
     const yPop = (v: number) => padTop + plotH - ((v - popMin) / Math.max(popMax - popMin, 1)) * plotH;
     const yTfr = (v: number) => padTop + plotH - ((v - tfrMin) / Math.max(tfrMax - tfrMin, 1)) * plotH;
 
     const popColor = '#3b82f6';
     const tfrColor = '#f97316';
+    const popColorB = '#10b981';
+    const tfrColorB = '#8b5cf6';
 
-    // Grid lines (based on pop axis)
+    // Grid lines
     ctx.strokeStyle = '#f1f5f9';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= 4; i++) {
@@ -112,9 +132,25 @@ export function DualAxisChart({ popData, tfrData, currentYear }: DualAxisChartPr
       }
     }
 
+    // Helper to draw line
+    function drawLine(data: TimeSeriesPoint[], scaleFn: (v: number) => number, color: string, dashed: boolean = false) {
+      if (data.length < 2) return;
+      if (!ctx) return;
+      ctx.beginPath();
+      ctx.moveTo(xScale(data[0].year), scaleFn(data[0].value));
+      for (let i = 1; i < data.length; i++) {
+        ctx.lineTo(xScale(data[i].year), scaleFn(data[i].value));
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      if (dashed) ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     // Draw population area + line
     if (popData.length >= 2) {
-      // Area
       ctx.beginPath();
       ctx.moveTo(xScale(popData[0].year), yPop(popData[0].value));
       for (let i = 1; i < popData.length; i++) {
@@ -129,31 +165,18 @@ export function DualAxisChart({ popData, tfrData, currentYear }: DualAxisChartPr
       ctx.fillStyle = grad;
       ctx.fill();
 
-      // Line
-      ctx.beginPath();
-      ctx.moveTo(xScale(popData[0].year), yPop(popData[0].value));
-      for (let i = 1; i < popData.length; i++) {
-        ctx.lineTo(xScale(popData[i].year), yPop(popData[i].value));
-      }
-      ctx.strokeStyle = popColor;
-      ctx.lineWidth = 2;
-      ctx.lineJoin = 'round';
-      ctx.stroke();
+      drawLine(popData, yPop, popColor);
     }
 
     // Draw TFR line
-    if (tfrData.length >= 2) {
-      ctx.beginPath();
-      ctx.moveTo(xScale(tfrData[0].year), yTfr(tfrData[0].value));
-      for (let i = 1; i < tfrData.length; i++) {
-        ctx.lineTo(xScale(tfrData[i].year), yTfr(tfrData[i].value));
-      }
-      ctx.strokeStyle = tfrColor;
-      ctx.lineWidth = 2;
-      ctx.lineJoin = 'round';
-      ctx.setLineDash([4, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+    drawLine(tfrData, yTfr, tfrColor, true);
+
+    // Draw scenario B lines
+    if (popDataB && popDataB.length >= 2) {
+      drawLine(popDataB, yPop, popColorB);
+    }
+    if (tfrDataB && tfrDataB.length >= 2) {
+      drawLine(tfrDataB, yTfr, tfrColorB, true);
     }
 
     // Replacement rate reference line (TFR = 2.1)
@@ -193,12 +216,10 @@ export function DualAxisChart({ popData, tfrData, currentYear }: DualAxisChartPr
     const legendY = padTop + 2;
     ctx.font = '600 9px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    // Pop legend
     ctx.fillStyle = popColor;
     ctx.fillRect(padLeft + 2, legendY - 4, 10, 2);
-    ctx.fillText('Population', padLeft + 16, legendY);
-    // TFR legend
-    const tfrLegendX = padLeft + 80;
+    ctx.fillText('Pop', padLeft + 16, legendY);
+    const tfrLegendX = padLeft + 48;
     ctx.fillStyle = tfrColor;
     ctx.setLineDash([3, 2]);
     ctx.beginPath();
@@ -210,7 +231,14 @@ export function DualAxisChart({ popData, tfrData, currentYear }: DualAxisChartPr
     ctx.setLineDash([]);
     ctx.fillText('TFR', tfrLegendX + 14, legendY);
 
-  }, [popData, tfrData, currentYear]);
+    if (popDataB) {
+      const bLegendX = padLeft + 90;
+      ctx.fillStyle = popColorB;
+      ctx.fillRect(bLegendX, legendY - 4, 10, 2);
+      ctx.fillText('B', bLegendX + 14, legendY);
+    }
+
+  }, [popData, tfrData, currentYear, baseYear, maxYear, popDataB, tfrDataB, canvasSize]);
 
   return (
     <div className="flex flex-col h-full min-h-0">

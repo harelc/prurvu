@@ -169,12 +169,55 @@ export function HowItWorks({ onClose }: HowItWorksProps) {
           </section>
 
           <section>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Advanced Parameters</h3>
+            <ul className="list-disc ml-5 space-y-1.5">
+              <li>
+                <strong>Mortality Improvement</strong>: an annual compounding reduction in mortality rates (0–3%/year), simulating
+                medical advances. Each year, all mortality rates are multiplied by an accumulated factor that compounds:
+                <div className="mt-1">
+                  <Eq tex="f(t) = f(t-1) \times (1 - r)" display />
+                </div>
+                where <Eq tex="r" /> is the improvement rate. At 1.5%/yr, mortality drops ~53% after 50 years.
+              </li>
+              <li>
+                <strong>Net Migration</strong>: migrants distributed by a simplified Rogers-Castro age profile (peak at ages 25-30,
+                children bump at 0-4, near zero after 65). Positive values = immigration, negative = emigration.
+              </li>
+              <li>
+                <strong>Childbearing Age Shift</strong>: shifts the entire ASFR age schedule by N years, simulating delayed or
+                earlier motherhood. The shifted schedule is clipped to the biologically plausible range (15–50) and then
+                rescaled to preserve the target TFR.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Compare Mode</h3>
+            <p>
+              Toggle Compare Mode to overlay a second scenario (B) on the pyramid as dashed green outlines,
+              with a second line on the time series chart. Switch between editing Scenario A and B parameters
+              using the A/B tab selector. Both scenarios advance in lockstep.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Keyboard Shortcuts</h3>
+            <ul className="list-disc ml-5 space-y-1">
+              <li><strong>Space</strong>: Play / Pause</li>
+              <li><strong>Right arrow</strong>: Step forward one year</li>
+              <li><strong>Left arrow</strong>: Step back one year</li>
+              <li><strong>R</strong>: Reset to base year</li>
+            </ul>
+          </section>
+
+          <section>
             <h3 className="text-base font-bold text-slate-800 mb-2">Limitations</h3>
             <ul className="list-disc ml-5 space-y-1.5">
-              <li>Migration is not modeled — the birth calibration factor partially compensates for infant migration but not for other ages</li>
               <li>Mortality and ASFR age schedules are held constant from the base year (only the level changes, not the shape)</li>
+              <li>Migration uses a simplified age profile, not country-specific data</li>
               <li>The open-ended age group (100+) is simplified</li>
               <li>Results diverge further from UN projections over longer time horizons</li>
+              <li>Simulation is capped at 200 years into the future</li>
             </ul>
           </section>
         </div>

@@ -149,6 +149,12 @@ function computeBirthCalibrationFactor(
   return estimatedActualBirths / simulatedBirths;
 }
 
+export async function getCachedCountryIds(): Promise<Set<number>> {
+  const cache = await loadCache();
+  if (!cache) return new Set();
+  return new Set(Object.keys(cache).map(Number));
+}
+
 export async function fetchAllCountryData(locationId: number, year: number): Promise<CountrySnapshot> {
   if (year === 2024) {
     const cache = await loadCache();

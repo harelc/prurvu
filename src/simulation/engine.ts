@@ -7,7 +7,35 @@ export interface SimulationParams {
   mortalityMultiplier?: number; // 0.5–1.5 (default 1.0)
   userSexRatio?: number; // override sex ratio at birth
   tfrConvergenceRate?: number; // 0.0–1.0: fraction of gap closed per year (1 = instant)
+  mortalityImprovementRate?: number; // 0–0.03: annual compounding mortality reduction
+  netMigrationRate?: number; // -0.02 to +0.02: fraction of total pop per year
+  asfrShiftYears?: number; // -5 to +10: shift ASFR age schedule
 }
+
+// Simplified Rogers-Castro migration age profile (101 weights, sum ≈ 1.0)
+const MIGRATION_AGE_PROFILE: number[] = (() => {
+  const raw: number[] = [];
+  for (let age = 0; age <= MAX_AGE; age++) {
+    let w: number;
+    if (age <= 4) w = 0.012;        // children moving with parents
+    else if (age <= 9) w = 0.008;
+    else if (age <= 14) w = 0.005;   // dip in teens
+    else if (age <= 19) w = 0.015;
+    else if (age <= 24) w = 0.025;   // peak working-age migration
+    else if (age <= 29) w = 0.028;
+    else if (age <= 34) w = 0.022;
+    else if (age <= 39) w = 0.015;
+    else if (age <= 44) w = 0.010;
+    else if (age <= 49) w = 0.007;
+    else if (age <= 54) w = 0.005;
+    else if (age <= 59) w = 0.003;
+    else if (age <= 64) w = 0.002;
+    else w = 0.001;                  // near zero after 65
+    raw.push(w);
+  }
+  const total = raw.reduce((s, v) => s + v, 0);
+  return raw.map(v => v / total); // normalize to sum to 1.0
+})();
 
 export function computeBaseTFR(asfr: ASFRGroup[]): number {
   let sum = 0;
@@ -20,6 +48,22 @@ export function computeBaseTFR(asfr: ASFRGroup[]): number {
 
 function scaleASFR(asfr: ASFRGroup[], scaleFactor: number): ASFRGroup[] {
   return asfr.map(g => ({ ...g, rate: g.rate * scaleFactor }));
+}
+
+function shiftASFR(asfr: ASFRGroup[], shiftYears: number): ASFRGroup[] {
+  if (shiftYears === 0) return asfr;
+  return asfr
+    .map(g => ({
+      ...g,
+      ageStart: g.ageStart + shiftYears,
+      ageEnd: g.ageEnd + shiftYears,
+    }))
+    .filter(g => g.ageEnd > 15 && g.ageStart < 50) // biologically plausible
+    .map(g => ({
+      ...g,
+      ageStart: Math.max(15, g.ageStart),
+      ageEnd: Math.min(50, g.ageEnd),
+    }));
 }
 
 // Build indexed arrays for O(1) lookups (ages 0–100)
@@ -36,6 +80,17 @@ function buildIndex(groups: AgeGroup[]): AgeGroup[] {
   return indexed;
 }
 
+export function getEffectiveASFR(
+  asfr: ASFRGroup[],
+  effectiveTFR: number,
+  asfrShiftYears: number = 0
+): ASFRGroup[] {
+  let shifted = shiftASFR(asfr, asfrShiftYears);
+  const baseTFR = computeBaseTFR(shifted);
+  const scaleFactor = baseTFR > 0 ? effectiveTFR / baseTFR : 1;
+  return scaleFactor !== 1 ? scaleASFR(shifted, scaleFactor) : shifted;
+}
+
 export function stepForward(
   snapshot: CountrySnapshot,
   params: SimulationParams = {}
@@ -45,6 +100,9 @@ export function stepForward(
     mortalityMultiplier = 1,
     userSexRatio,
     tfrConvergenceRate = 1,
+    mortalityImprovementRate = 0,
+    netMigrationRate = 0,
+    asfrShiftYears = 0,
   } = params;
 
   const { population, asfr, mortality, sexRatio, birthCalibrationFactor } = snapshot;
@@ -53,8 +111,11 @@ export function stepForward(
   const popIdx = buildIndex(population);
   const mortIdx = buildIndex(mortality);
 
+  // Mortality improvement: compound the accumulated factor
+  const prevImprovement = snapshot.mortalityImprovementAccumulated ?? 1;
+  const improvementFactor = prevImprovement * (1 - mortalityImprovementRate);
+
   // Determine effective TFR with convergence rate
-  const baseTFR = computeBaseTFR(asfr);
   let effectiveTFR: number;
   if (userTFR != null) {
     const currentTFR = snapshot.currentTFR ?? snapshot.tfr;
@@ -67,17 +128,19 @@ export function stepForward(
     effectiveTFR = snapshot.currentTFR ?? snapshot.tfr;
   }
 
-  // Scale ASFR based on effective TFR
-  const scaleFactor = baseTFR > 0 ? effectiveTFR / baseTFR : 1;
-  const effectiveASFR = scaleFactor !== 1 ? scaleASFR(asfr, scaleFactor) : asfr;
+  // Apply ASFR shift then scale by effective TFR
+  const shiftedASFR = shiftASFR(asfr, asfrShiftYears);
+  const shiftedBaseTFR = computeBaseTFR(shiftedASFR);
+  const scaleFactor = shiftedBaseTFR > 0 ? effectiveTFR / shiftedBaseTFR : 1;
+  const effectiveASFR = scaleFactor !== 1 ? scaleASFR(shiftedASFR, scaleFactor) : shiftedASFR;
 
-  // 1. DEATHS: compute survivors for each age with mortality multiplier
+  // 1. DEATHS: compute survivors for each age with mortality multiplier + improvement
   const survivors: AgeGroup[] = new Array(MAX_AGE + 1);
   for (let age = 0; age <= MAX_AGE; age++) {
     const p = popIdx[age];
     const m = mortIdx[age];
-    const mMale = Math.min(m.male * mortalityMultiplier, 1);
-    const mFemale = Math.min(m.female * mortalityMultiplier, 1);
+    const mMale = Math.min(m.male * mortalityMultiplier * improvementFactor, 1);
+    const mFemale = Math.min(m.female * mortalityMultiplier * improvementFactor, 1);
     survivors[age] = {
       age,
       male: p.male * (1 - mMale),
@@ -130,6 +193,21 @@ export function stepForward(
 
   newPopulation[0] = { age: 0, male: maleBirths, female: femaleBirths };
 
+  // 4. NET MIGRATION: distribute migrants by age profile
+  if (netMigrationRate !== 0) {
+    const totalPop = newPopulation.reduce((s, g) => s + g.male + g.female, 0);
+    const totalMigrants = totalPop * netMigrationRate;
+    for (let age = 0; age <= MAX_AGE; age++) {
+      const migrants = totalMigrants * MIGRATION_AGE_PROFILE[age];
+      // Split 50/50 male/female
+      newPopulation[age] = {
+        age,
+        male: Math.max(0, newPopulation[age].male + migrants / 2),
+        female: Math.max(0, newPopulation[age].female + migrants / 2),
+      };
+    }
+  }
+
   return {
     locationId: snapshot.locationId,
     year: snapshot.year + 1,
@@ -140,6 +218,7 @@ export function stepForward(
     tfr: effectiveTFR,
     birthCalibrationFactor,
     currentTFR: effectiveTFR,
+    mortalityImprovementAccumulated: improvementFactor,
   };
 }
 

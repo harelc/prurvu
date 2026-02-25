@@ -20,6 +20,7 @@ export interface CountrySnapshot {
   tfr: number; // total fertility rate (reference)
   birthCalibrationFactor: number; // actual_age0 / simulated_age0
   currentTFR?: number; // tracked effective TFR for gradual convergence
+  mortalityImprovementAccumulated?: number; // compounds each year (starts 1.0)
 }
 
 export interface Country {

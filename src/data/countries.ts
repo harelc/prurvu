@@ -117,6 +117,10 @@ const iso3to2: Record<string, string> = {
   USA:'US',VEN:'VE',VNM:'VN',ZAF:'ZA',DZA:'DZ',CAN:'CA',
 };
 
+export function findCountryByIso3(iso3: string): Country | undefined {
+  return countries.find(c => c.iso3 === iso3);
+}
+
 export function countryFlag(iso3: string): string {
   const iso2 = iso3to2[iso3];
   if (!iso2) return '';
