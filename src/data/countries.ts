@@ -101,3 +101,26 @@ export const countriesByRegion = regions.map(region => ({
   region,
   countries: countries.filter(c => c.region === region).sort((a, b) => a.name.localeCompare(b.name)),
 }));
+
+export const countriesAlphabetic = [...countries].sort((a, b) => a.name.localeCompare(b.name));
+
+// ISO3 → ISO2 mapping for flag emoji generation
+const iso3to2: Record<string, string> = {
+  AFG:'AF',AGO:'AO',ARE:'AE',ARG:'AR',AUS:'AU',AUT:'AT',BEL:'BE',BGD:'BD',
+  BRA:'BR',CHE:'CH',CHL:'CL',CHN:'CN',CMR:'CM',COD:'CD',COL:'CO',CRI:'CR',
+  CUB:'CU',CZE:'CZ',DEU:'DE',DNK:'DK',EGY:'EG',ESP:'ES',ETH:'ET',FIN:'FI',
+  FRA:'FR',GBR:'GB',GHA:'GH',GRC:'GR',HUN:'HU',IDN:'ID',IND:'IN',IRL:'IE',
+  IRN:'IR',IRQ:'IQ',ISR:'IL',ITA:'IT',JPN:'JP',KEN:'KE',KOR:'KR',MAR:'MA',
+  MDG:'MG',MEX:'MX',MMR:'MM',MOZ:'MZ',MYS:'MY',NGA:'NG',NLD:'NL',NOR:'NO',
+  NZL:'NZ',PAK:'PK',PER:'PE',PHL:'PH',POL:'PL',PRT:'PT',ROU:'RO',RUS:'RU',
+  SAU:'SA',SGP:'SG',SWE:'SE',THA:'TH',TUR:'TR',TWN:'TW',TZA:'TZ',UKR:'UA',
+  USA:'US',VEN:'VE',VNM:'VN',ZAF:'ZA',DZA:'DZ',CAN:'CA',
+};
+
+export function countryFlag(iso3: string): string {
+  const iso2 = iso3to2[iso3];
+  if (!iso2) return '';
+  return String.fromCodePoint(
+    ...iso2.split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65)
+  );
+}

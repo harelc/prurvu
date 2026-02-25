@@ -18,6 +18,8 @@ export interface CountrySnapshot {
   mortality: AgeGroup[]; // rate m(x) per age, male/female
   sexRatio: number; // males per female at birth
   tfr: number; // total fertility rate (reference)
+  birthCalibrationFactor: number; // actual_age0 / simulated_age0
+  currentTFR?: number; // tracked effective TFR for gradual convergence
 }
 
 export interface Country {

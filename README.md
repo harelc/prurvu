@@ -1,73 +1,74 @@
-# React + TypeScript + Vite
+# Age Pyramid Simulator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interactive population pyramid simulator powered by **UN World Population Prospects 2024** data. Watch demographic structures evolve year-by-year using cohort-component projection.
 
-Currently, two official plugins are available:
+**[Live Demo](https://harelc.github.io/prurvu/)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **96 countries** with real demographic data (population by age/sex, fertility, mortality)
+- **Cohort-component projection** engine — births, deaths, and aging each year
+- **Interactive controls:**
+  - **Modified TFR** — adjust total fertility rate with optional gradual convergence (set how many years to reach target)
+  - **Mortality multiplier** — scale all death rates -50% to +50%
+  - **Sex ratio at birth** — adjust male-to-female newborn ratio
+- **Birth calibration** — corrects for migration and mid-year timing so simulated age-0 matches actual data
+- **Population pyramid** with gender excess highlighting and future-born separator line
+- **Dual-axis time chart** — population and TFR plotted over simulation years
+- **Country selector** with flags, search, region grouping or A–Z sorting
+- Play/pause animation at adjustable speed
+- All controls reset on country change
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- React + TypeScript + Vite
+- D3.js for the pyramid visualization
+- Canvas API for the time series chart
+- Tailwind CSS
+- UN Population Division Data Portal API
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+For live API access (optional — cached data is bundled for 25 countries):
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# Get a token at https://population.un.org/dataportal/about/dataapi
+echo "VITE_UN_API_TOKEN=Bearer <your-token>" > .env
 ```
+
+### Pre-fetch country data
+
+```bash
+npx tsx scripts/fetch-data.ts [limit]
+```
+
+Fetches and caches demographic data so the app works without API calls. Skips countries already in the cache.
+
+## How It Works
+
+Each simulation step:
+
+1. **Deaths** — apply age/sex-specific mortality rates (scaled by mortality multiplier)
+2. **Aging** — shift survivors up one year; age 100+ accumulates
+3. **Births** — apply age-specific fertility rates to women 15–49, scaled by TFR ratio and birth calibration factor
+4. **Split** — divide newborns by sex ratio into male/female age-0 cohort
+
+When TFR convergence is set to N years, the effective TFR blends exponentially toward the target, reaching ~95% in N years.
+
+## Data Sources
+
+- [UN World Population Prospects 2024](https://population.un.org/wpp/)
+- Population by single-year age and sex (indicator 47)
+- Age-specific fertility rates (indicator 17)
+- Age-specific mortality rates (indicator 80)
+- Sex ratio at birth (indicator 58)
+- Total fertility rate (indicator 19)
+
+## License
+
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — Harel Cain

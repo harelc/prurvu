@@ -5,6 +5,7 @@ interface YearDisplayProps {
   year: number;
   population: AgeGroup[];
   tfr: number;
+  targetTFR?: number; // shown when gradual mode is active
 }
 
 function formatPopulation(n: number): string {
@@ -14,17 +15,21 @@ function formatPopulation(n: number): string {
   return Math.round(n).toString();
 }
 
-export function YearDisplay({ year, population, tfr }: YearDisplayProps) {
+export function YearDisplay({ year, population, tfr, targetTFR }: YearDisplayProps) {
   const totalPop = getTotalPopulation(population);
   const medianAge = getMedianAge(population);
   const depRatio = getDependencyRatio(population);
+
+  const tfrLabel = targetTFR != null
+    ? `${tfr.toFixed(2)} → ${targetTFR.toFixed(2)}`
+    : tfr.toFixed(2);
 
   return (
     <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-5">
       <Stat label="Year" value={String(year)} />
       <Stat label="Population" value={formatPopulation(totalPop)} />
       <Stat label="Median Age" value={String(medianAge)} />
-      <Stat label="TFR" value={tfr.toFixed(2)} />
+      <Stat label="TFR" value={tfrLabel} />
       <Stat label="Dep. Ratio" value={depRatio.toFixed(1) + '%'} />
     </div>
   );

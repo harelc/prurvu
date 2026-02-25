@@ -5,13 +5,15 @@ import type { AgeGroup } from '../types';
 interface PyramidProps {
   population: AgeGroup[];
   countryName: string;
+  yearsSimulated?: number;
+  currentYear?: number;
 }
 
 const MARGIN = { top: 24, right: 40, bottom: 34, left: 40 };
 const BAR_GAP = 0.5;
-const LABEL_WIDTH = 32;
+const LABEL_WIDTH = 52; // wider for "age / birth year"
 
-export function Pyramid({ population, countryName }: PyramidProps) {
+export function Pyramid({ population, countryName, yearsSimulated = 0, currentYear = 2024 }: PyramidProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +39,7 @@ export function Pyramid({ population, countryName }: PyramidProps) {
       .range([innerHeight, 0])
       .padding(0.05);
 
-    // Warm color scales
+    // Color scales
     const maleColor = d3.scaleSequential()
       .domain([0, 100])
       .interpolator(d3.interpolateRgb('#3b82f6', '#1e3a5f'));
@@ -53,6 +55,8 @@ export function Pyramid({ population, countryName }: PyramidProps) {
       g.append('g').attr('class', 'axis-age');
       g.append('g').attr('class', 'bars-male');
       g.append('g').attr('class', 'bars-female');
+      g.append('g').attr('class', 'excess-male');
+      g.append('g').attr('class', 'excess-female');
       g.append('text').attr('class', 'label-male')
         .attr('text-anchor', 'middle')
         .attr('fill', '#3b82f6')
@@ -114,7 +118,75 @@ export function Pyramid({ population, countryName }: PyramidProps) {
 
     femaleBars.exit().remove();
 
-    // Age axis
+    // Gender excess overlays — show the "extra" part in a brighter color
+    // Male excess
+    const excessMaleGroup = g.select<SVGGElement>('g.excess-male');
+    const maleExcessData = population.filter(d => d.male > d.female);
+    const excessMaleBars = excessMaleGroup.selectAll<SVGRectElement, AgeGroup>('rect').data(maleExcessData, d => String(d.age));
+    excessMaleBars.enter()
+      .append('rect')
+      .attr('opacity', 0.5)
+      .merge(excessMaleBars)
+      .transition().duration(400)
+      .attr('x', d => xScaleMale(d.male))
+      .attr('y', d => yScale(d.age) ?? 0)
+      .attr('width', d => xScaleMale(d.female) - xScaleMale(d.male))
+      .attr('height', yScale.bandwidth() - BAR_GAP)
+      .attr('fill', '#60a5fa')
+      .attr('opacity', 0.45);
+    excessMaleBars.exit().remove();
+
+    // Female excess
+    const excessFemaleGroup = g.select<SVGGElement>('g.excess-female');
+    const femaleExcessData = population.filter(d => d.female > d.male);
+    const excessFemaleBars = excessFemaleGroup.selectAll<SVGRectElement, AgeGroup>('rect').data(femaleExcessData, d => String(d.age));
+    excessFemaleBars.enter()
+      .append('rect')
+      .attr('opacity', 0.5)
+      .merge(excessFemaleBars)
+      .transition().duration(400)
+      .attr('x', d => femaleBarsOffset + xScaleFemale(d.male))
+      .attr('y', d => yScale(d.age) ?? 0)
+      .attr('width', d => xScaleFemale(d.female) - xScaleFemale(d.male))
+      .attr('height', yScale.bandwidth() - BAR_GAP)
+      .attr('fill', '#fdba74')
+      .attr('opacity', 0.45);
+    excessFemaleBars.exit().remove();
+
+    // Future separator line
+    let futureLine = g.select<SVGLineElement>('line.future-sep');
+    let futureLabel = g.select<SVGTextElement>('text.future-label');
+    if (futureLine.empty()) {
+      futureLine = g.append('line').attr('class', 'future-sep');
+      futureLabel = g.append('text').attr('class', 'future-label');
+    }
+    if (yearsSimulated > 0 && yearsSimulated <= 100) {
+      const sepAge = yearsSimulated - 1;
+      const sepY = (yScale(sepAge) ?? 0) + yScale.bandwidth() + 0.5;
+      futureLine
+        .attr('x1', 0)
+        .attr('x2', innerWidth)
+        .attr('y1', sepY)
+        .attr('y2', sepY)
+        .attr('stroke', '#ef4444')
+        .attr('stroke-width', 1.5)
+        .attr('stroke-dasharray', '6,4')
+        .attr('opacity', 0.6);
+      futureLabel
+        .attr('x', innerWidth)
+        .attr('y', sepY - 3)
+        .attr('text-anchor', 'end')
+        .attr('fill', '#ef4444')
+        .attr('font-size', '9px')
+        .attr('font-weight', '600')
+        .attr('opacity', 0.7)
+        .text('Born after ' + (currentYear - yearsSimulated));
+    } else {
+      futureLine.attr('opacity', 0);
+      futureLabel.attr('opacity', 0);
+    }
+
+    // Age + birth year axis (center column)
     const ageAxisGroup = g.select<SVGGElement>('g.axis-age');
     ageAxisGroup.attr('transform', `translate(${sideWidth + LABEL_WIDTH / 2}, 0)`);
     const ageTicks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
@@ -127,8 +199,11 @@ export function Pyramid({ population, countryName }: PyramidProps) {
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
       .attr('fill', '#94a3b8')
-      .attr('font-size', '9px')
-      .text(d => d);
+      .attr('font-size', '8px')
+      .text(d => {
+        const birthYear = currentYear - d;
+        return `${d} / ${birthYear}`;
+      });
 
     const formatAxis = (n: number) => {
       if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -161,7 +236,7 @@ export function Pyramid({ population, countryName }: PyramidProps) {
       .attr('y', -8)
       .text('Female');
 
-  }, [population, countryName]);
+  }, [population, countryName, yearsSimulated, currentYear]);
 
   return (
     <div ref={containerRef} className="h-full w-full min-h-[500px]">
