@@ -18,11 +18,12 @@ function formatPopulation(n: number): string {
   return Math.round(n).toString();
 }
 
-function InfoTip({ text }: { text: string }) {
+function InfoTip({ text, position = 'above' }: { text: string; position?: 'above' | 'below' }) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const show = () => { if (timerRef.current) clearTimeout(timerRef.current); setOpen(true); };
   const hide = () => { timerRef.current = setTimeout(() => setOpen(false), 150); };
+  const isBelow = position === 'below';
   return (
     <span className="relative inline-flex ml-1">
       <button
@@ -34,10 +35,10 @@ function InfoTip({ text }: { text: string }) {
       {open && (
         <div
           onMouseEnter={show} onMouseLeave={hide}
-          className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52 rounded-lg bg-slate-800 px-3 py-2 text-[10px] leading-relaxed text-slate-100 shadow-lg normal-case tracking-normal font-normal"
+          className={`absolute z-50 left-1/2 -translate-x-1/2 w-52 rounded-lg bg-slate-800 px-3 py-2 text-[10px] leading-relaxed text-slate-100 shadow-lg normal-case tracking-normal font-normal ${isBelow ? 'top-full mt-1.5' : 'bottom-full mb-1.5'}`}
         >
           {text}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-800" />
+          <div className={`absolute left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent ${isBelow ? 'bottom-full -mb-px border-b-4 border-b-slate-800' : 'top-full -mt-px border-t-4 border-t-slate-800'}`} />
         </div>
       )}
     </span>
@@ -80,16 +81,17 @@ export function YearDisplay({ year, population, tfr, targetTFR, comparePopulatio
         value={depRatio.toFixed(1) + '%'}
         compare={hasCompare ? cmpDep.toFixed(1) + '%' : undefined}
         info="Ratio of dependents (ages 0–14 and 65+) to working-age population (15–64). Higher values mean more dependents per worker."
+        infoPosition="below"
       />
     </div>
   );
 }
 
-function Stat({ label, value, subtitle, compare, info }: { label: string; value: string; subtitle?: string; compare?: string; info?: string }) {
+function Stat({ label, value, subtitle, compare, info, infoPosition }: { label: string; value: string; subtitle?: string; compare?: string; info?: string; infoPosition?: 'above' | 'below' }) {
   return (
     <div>
       <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-        {label}{info && <InfoTip text={info} />}
+        {label}{info && <InfoTip text={info} position={infoPosition} />}
       </div>
       <div className="text-base font-bold tabular-nums text-slate-800">
         {value}

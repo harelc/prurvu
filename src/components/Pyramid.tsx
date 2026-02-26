@@ -46,7 +46,8 @@ export const Pyramid = forwardRef<SVGSVGElement, PyramidProps>(function Pyramid(
 
     const container = containerRef.current;
     const width = container.clientWidth;
-    const height = Math.max(500, container.clientHeight);
+    const isMobile = container.clientWidth < 640;
+    const height = Math.max(isMobile ? 400 : 500, container.clientHeight);
     const innerWidth = width - MARGIN.left - MARGIN.right;
     const innerHeight = height - MARGIN.top - MARGIN.bottom;
     const sideWidth = (innerWidth - LABEL_WIDTH) / 2;
@@ -425,7 +426,7 @@ export const Pyramid = forwardRef<SVGSVGElement, PyramidProps>(function Pyramid(
   }, [population, countryName, yearsSimulated, currentYear, comparisonPopulation, showMomentum, containerSize]);
 
   return (
-    <div ref={containerRef} className="h-full w-full min-h-[500px]">
+    <div ref={containerRef} className="h-full w-full min-h-[400px] md:min-h-[500px]">
       <svg ref={svgRef} className="h-full w-full" />
     </div>
   );

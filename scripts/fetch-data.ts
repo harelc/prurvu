@@ -12,6 +12,7 @@ const YEAR = 2024;
 const VARIANT = 4; // Median
 
 const COUNTRIES = [
+  // Existing 69
   { id: 840, name: 'United States' }, { id: 392, name: 'Japan' }, { id: 566, name: 'Nigeria' },
   { id: 356, name: 'India' }, { id: 156, name: 'China' }, { id: 276, name: 'Germany' },
   { id: 76, name: 'Brazil' }, { id: 826, name: 'United Kingdom' }, { id: 643, name: 'Russia' },
@@ -22,8 +23,7 @@ const COUNTRIES = [
   { id: 458, name: 'Malaysia' }, { id: 702, name: 'Singapore' },
   { id: 586, name: 'Pakistan' }, { id: 50, name: 'Bangladesh' }, { id: 4, name: 'Afghanistan' },
   { id: 792, name: 'Turkey' }, { id: 364, name: 'Iran' }, { id: 682, name: 'Saudi Arabia' },
-  { id: 368, name: 'Iraq' }, { id: 784, name: 'UAE' },
-  { id: 818, name: 'Egypt' },
+  { id: 368, name: 'Iraq' }, { id: 784, name: 'UAE' }, { id: 818, name: 'Egypt' },
   { id: 528, name: 'Netherlands' }, { id: 56, name: 'Belgium' }, { id: 756, name: 'Switzerland' },
   { id: 40, name: 'Austria' }, { id: 372, name: 'Ireland' }, { id: 620, name: 'Portugal' },
   { id: 300, name: 'Greece' }, { id: 752, name: 'Sweden' }, { id: 578, name: 'Norway' },
@@ -38,6 +38,29 @@ const COUNTRIES = [
   { id: 834, name: 'Tanzania' }, { id: 180, name: 'DR Congo' }, { id: 288, name: 'Ghana' },
   { id: 508, name: 'Mozambique' }, { id: 450, name: 'Madagascar' }, { id: 24, name: 'Angola' },
   { id: 120, name: 'Cameroon' }, { id: 554, name: 'New Zealand' },
+  // New 50
+  { id: 496, name: 'Mongolia' }, { id: 408, name: 'North Korea' },
+  { id: 116, name: 'Cambodia' }, { id: 418, name: 'Laos' },
+  { id: 524, name: 'Nepal' }, { id: 144, name: 'Sri Lanka' },
+  { id: 400, name: 'Jordan' }, { id: 422, name: 'Lebanon' }, { id: 512, name: 'Oman' },
+  { id: 414, name: 'Kuwait' }, { id: 634, name: 'Qatar' }, { id: 48, name: 'Bahrain' },
+  { id: 887, name: 'Yemen' }, { id: 760, name: 'Syria' },
+  { id: 398, name: 'Kazakhstan' }, { id: 860, name: 'Uzbekistan' },
+  { id: 442, name: 'Luxembourg' },
+  { id: 352, name: 'Iceland' }, { id: 233, name: 'Estonia' }, { id: 428, name: 'Latvia' },
+  { id: 440, name: 'Lithuania' },
+  { id: 100, name: 'Bulgaria' }, { id: 688, name: 'Serbia' }, { id: 191, name: 'Croatia' },
+  { id: 703, name: 'Slovakia' }, { id: 112, name: 'Belarus' }, { id: 268, name: 'Georgia' },
+  { id: 498, name: 'Moldova' }, { id: 8, name: 'Albania' },
+  { id: 320, name: 'Guatemala' }, { id: 340, name: 'Honduras' },
+  { id: 214, name: 'Dominican Republic' }, { id: 332, name: 'Haiti' }, { id: 388, name: 'Jamaica' },
+  { id: 218, name: 'Ecuador' }, { id: 68, name: 'Bolivia' },
+  { id: 600, name: 'Paraguay' }, { id: 858, name: 'Uruguay' },
+  { id: 788, name: 'Tunisia' }, { id: 434, name: 'Libya' }, { id: 736, name: 'Sudan' },
+  { id: 800, name: 'Uganda' }, { id: 686, name: 'Senegal' }, { id: 716, name: 'Zimbabwe' },
+  { id: 562, name: 'Niger' }, { id: 466, name: 'Mali' }, { id: 854, name: 'Burkina Faso' },
+  { id: 148, name: 'Chad' }, { id: 706, name: 'Somalia' },
+  { id: 598, name: 'Papua New Guinea' },
 ];
 
 interface ApiResponse {

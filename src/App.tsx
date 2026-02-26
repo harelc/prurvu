@@ -15,6 +15,7 @@ import { findCountryByIso3 } from './data/countries';
 import type { Scenario } from './data/scenarios';
 import { exportPyramidPNG, exportPopulationCSV, exportTimeSeriesCSV } from './utils/export';
 import type { PNGExportMeta } from './utils/export';
+import { MobileControls } from './components/MobileControls';
 
 const BASE_YEAR = 2024;
 const MAX_YEAR = 2224; // 200 years into the future
@@ -674,73 +675,84 @@ export default function App() {
     ? getEffectiveASFR(baseSnapshot.asfr, effectiveDisplayTFR, activeAsfrShiftYears)
     : [];
 
+  const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
+
+  const controlsProps = {
+    selectedCountry: country,
+    onSelectCountry: handleSelectCountry,
+    year: currentSnapshot?.year ?? BASE_YEAR,
+    baseYear: BASE_YEAR,
+    maxYear: MAX_YEAR,
+    onStepForward: handleStepForward,
+    onStepBack: handleStepBack,
+    onReset: handleReset,
+    playing,
+    onTogglePlay: handleTogglePlay,
+    speed,
+    onSpeedChange: setSpeed,
+    tfr: effectiveTFR,
+    baseTFR,
+    onTFRChange: handleTFRChange,
+    tfrConvergenceYears: activeTfrConvergenceYears,
+    onTFRConvergenceYearsChange: handleTFRConvergenceYearsChange,
+    mortalityMultiplier: activeMortalityMultiplier,
+    onMortalityChange: handleMortalityChange,
+    userSexRatio: effectiveSexRatio,
+    baseSexRatio,
+    onSexRatioChange: handleSexRatioChange,
+    netMigrationRate: activeNetMigrationRate,
+    onNetMigrationChange: handleNetMigrationChange,
+    asfrShiftYears: activeAsfrShiftYears,
+    onAsfrShiftChange: handleAsfrShiftChange,
+    loading,
+    cachedCountryIds,
+    onApplyScenario: handleApplyScenario,
+    compareMode,
+    onCompareModeToggle: handleCompareModeToggle,
+    activeScenario,
+    onActiveScenarioChange: setActiveScenario,
+  };
+
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-slate-200 via-slate-100 to-stone-200 text-slate-800 overflow-hidden">
       {/* Header */}
-      <header className="shrink-0 border-b border-slate-200 bg-slate-50/50 backdrop-blur px-6 py-4 flex items-center justify-between">
+      <header className="shrink-0 border-b border-slate-200 bg-slate-50/50 backdrop-blur px-3 py-2 md:px-6 md:py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-base md:text-xl font-bold tracking-tight text-slate-900">
             Age Pyramid Simulator
           </h1>
-          <p className="text-xs text-slate-400 italic">
+          <p className="text-xs text-slate-400 italic hidden sm:block">
             Be fruitful and multiply (Genesis 1:28)
           </p>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-slate-400 hidden sm:block">
             Based on <a href="https://population.un.org/wpp/" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600 transition-colors">UN World Population Prospects 2024</a>
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Mobile controls toggle */}
+          <button
+            onClick={() => setMobileControlsOpen(true)}
+            className="md:hidden rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50 transition-colors"
+          >
+            Controls
+          </button>
           <button
             onClick={() => setShowTutorial(true)}
-            className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 hover:border-blue-300 transition-colors"
+            className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 md:px-4 md:py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 hover:border-blue-300 transition-colors"
           >
-            📖 How it works
+            <span className="hidden sm:inline">📖 </span>How it works
           </button>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-slate-50/40 backdrop-blur p-5">
-          <Controls
-            selectedCountry={country}
-            onSelectCountry={handleSelectCountry}
-            year={currentSnapshot?.year ?? BASE_YEAR}
-            baseYear={BASE_YEAR}
-            maxYear={MAX_YEAR}
-            onStepForward={handleStepForward}
-            onStepBack={handleStepBack}
-            onReset={handleReset}
-            playing={playing}
-            onTogglePlay={handleTogglePlay}
-            speed={speed}
-            onSpeedChange={setSpeed}
-            tfr={effectiveTFR}
-            baseTFR={baseTFR}
-            onTFRChange={handleTFRChange}
-            tfrConvergenceYears={activeTfrConvergenceYears}
-            onTFRConvergenceYearsChange={handleTFRConvergenceYearsChange}
-            mortalityMultiplier={activeMortalityMultiplier}
-            onMortalityChange={handleMortalityChange}
-            userSexRatio={effectiveSexRatio}
-            baseSexRatio={baseSexRatio}
-            onSexRatioChange={handleSexRatioChange}
-            netMigrationRate={activeNetMigrationRate}
-            onNetMigrationChange={handleNetMigrationChange}
-            asfrShiftYears={activeAsfrShiftYears}
-            onAsfrShiftChange={handleAsfrShiftChange}
-            loading={loading}
-            cachedCountryIds={cachedCountryIds}
-            onApplyScenario={handleApplyScenario}
-            compareMode={compareMode}
-            onCompareModeToggle={handleCompareModeToggle}
-            activeScenario={activeScenario}
-            onActiveScenarioChange={setActiveScenario}
-          />
+        {/* Sidebar — hidden on mobile, visible on md+ */}
+        <aside className="hidden md:block w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-slate-50/40 backdrop-blur p-5">
+          <Controls {...controlsProps} />
         </aside>
 
         {/* Main content */}
-        <main className="flex flex-1 flex-col overflow-hidden p-6">
+        <main className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto md:overflow-hidden p-3 md:p-6">
           {loading && <LoadingState message={`Loading data for ${country?.name}...`} />}
 
           {error && (
@@ -762,7 +774,7 @@ export default function App() {
 
           {!loading && !error && currentSnapshot && (
             <>
-              <div className="mb-3 shrink-0 rounded-xl border border-slate-200 bg-slate-50/50 backdrop-blur px-4 py-2 shadow-sm">
+              <div className="mb-3 shrink-0 rounded-xl border border-slate-200 bg-slate-50/50 backdrop-blur px-3 py-2 md:px-4 shadow-sm">
                 <YearDisplay
                   year={currentSnapshot.year}
                   population={currentSnapshot.population}
@@ -773,9 +785,10 @@ export default function App() {
                 />
               </div>
 
-              <div className="flex flex-1 gap-4 overflow-hidden">
+              {/* Desktop: horizontal layout. Mobile: vertical stacking */}
+              <div className="flex flex-col md:flex-row flex-1 gap-3 md:gap-4 md:overflow-hidden">
                 {/* Pyramid */}
-                <div className="relative flex-[3] min-w-0 rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-2 shadow-sm overflow-hidden">
+                <div className="relative md:flex-[3] min-w-0 rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-2 shadow-sm overflow-hidden">
                   {/* Export buttons */}
                   <div className="absolute top-3 right-3 z-10 flex gap-1">
                     <button
@@ -812,8 +825,8 @@ export default function App() {
                 </div>
 
                 {/* Right panel: Dual-axis chart + ASFR histogram */}
-                <div className="flex-[2] min-w-0 flex flex-col gap-3 overflow-hidden">
-                  <div className="flex-[2] rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-3 shadow-sm min-h-0 overflow-hidden">
+                <div className="md:flex-[2] min-w-0 flex flex-col gap-3 md:overflow-hidden">
+                  <div className="md:flex-[2] h-48 md:h-auto rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-3 shadow-sm min-h-0 overflow-hidden">
                     <div className="flex justify-end mb-1">
                       <button
                         onClick={handleExportTimeSeries}
@@ -834,7 +847,7 @@ export default function App() {
                     />
                   </div>
                   {baseSnapshot && effectiveASFR.length > 0 && (
-                    <div className="flex-1 min-h-[10rem] rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-3 shadow-sm">
+                    <div className="md:flex-1 h-40 md:h-auto min-h-[10rem] rounded-xl border border-slate-200 bg-slate-50/40 backdrop-blur p-3 shadow-sm">
                       <ASFRChart asfr={effectiveASFR} />
                     </div>
                   )}
@@ -846,19 +859,19 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <footer className="shrink-0 border-t border-slate-200 bg-slate-50/40 px-6 py-2.5 text-center text-xs text-slate-400">
-        <p className="flex items-center justify-center gap-1">
+      <footer className="shrink-0 border-t border-slate-200 bg-slate-50/40 px-3 md:px-6 py-2 md:py-2.5 text-center text-xs text-slate-400">
+        <p className="flex flex-wrap items-center justify-center gap-1">
           <span>&copy; Harel Cain</span>
           <span>|</span>
           <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-blue-600 transition-colors">
             CC BY-NC-SA 4.0
           </a>
-          <span>|</span>
-          <a href="https://github.com/harelc/prurvu" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-blue-600 transition-colors">
+          <span className="hidden sm:inline">|</span>
+          <a href="https://github.com/harelc/prurvu" target="_blank" rel="noopener noreferrer" className="hidden sm:inline text-slate-500 hover:text-blue-600 transition-colors">
             Source Code
           </a>
-          <span>|</span>
-          <a href="https://www.buymeacoffee.com/harelc" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-500 transition-colors align-middle">
+          <span className="hidden sm:inline">|</span>
+          <a href="https://www.buymeacoffee.com/harelc" target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-1 text-amber-600 hover:text-amber-500 transition-colors align-middle">
             <img src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg" alt="" className="h-3.5 w-3.5 inline-block align-middle" />
             <span className="align-middle">Buy me a coffee</span>
           </a>
@@ -870,6 +883,14 @@ export default function App() {
           )}
         </p>
       </footer>
+
+      {/* Mobile Controls Drawer */}
+      <MobileControls
+        open={mobileControlsOpen}
+        onClose={() => setMobileControlsOpen(false)}
+      >
+        <Controls {...controlsProps} />
+      </MobileControls>
 
       {/* Tutorial Modal */}
       {showTutorial && <HowItWorks onClose={() => setShowTutorial(false)} />}

@@ -6,6 +6,8 @@ export const countries: Country[] = [
   { id: 392, name: 'Japan', iso3: 'JPN', region: 'East Asia' },
   { id: 410, name: 'South Korea', iso3: 'KOR', region: 'East Asia' },
   { id: 158, name: 'Taiwan', iso3: 'TWN', region: 'East Asia' },
+  { id: 496, name: 'Mongolia', iso3: 'MNG', region: 'East Asia' },
+  { id: 408, name: 'North Korea', iso3: 'PRK', region: 'East Asia' },
 
   // Southeast Asia
   { id: 360, name: 'Indonesia', iso3: 'IDN', region: 'Southeast Asia' },
@@ -15,12 +17,16 @@ export const countries: Country[] = [
   { id: 104, name: 'Myanmar', iso3: 'MMR', region: 'Southeast Asia' },
   { id: 458, name: 'Malaysia', iso3: 'MYS', region: 'Southeast Asia' },
   { id: 702, name: 'Singapore', iso3: 'SGP', region: 'Southeast Asia' },
+  { id: 116, name: 'Cambodia', iso3: 'KHM', region: 'Southeast Asia' },
+  { id: 418, name: 'Laos', iso3: 'LAO', region: 'Southeast Asia' },
 
   // South Asia
   { id: 356, name: 'India', iso3: 'IND', region: 'South Asia' },
   { id: 586, name: 'Pakistan', iso3: 'PAK', region: 'South Asia' },
   { id: 50, name: 'Bangladesh', iso3: 'BGD', region: 'South Asia' },
   { id: 4, name: 'Afghanistan', iso3: 'AFG', region: 'South Asia' },
+  { id: 524, name: 'Nepal', iso3: 'NPL', region: 'South Asia' },
+  { id: 144, name: 'Sri Lanka', iso3: 'LKA', region: 'South Asia' },
 
   // Middle East
   { id: 792, name: 'Turkey', iso3: 'TUR', region: 'Middle East' },
@@ -30,6 +36,18 @@ export const countries: Country[] = [
   { id: 784, name: 'UAE', iso3: 'ARE', region: 'Middle East' },
   { id: 376, name: 'Israel', iso3: 'ISR', region: 'Middle East' },
   { id: 818, name: 'Egypt', iso3: 'EGY', region: 'Middle East' },
+  { id: 400, name: 'Jordan', iso3: 'JOR', region: 'Middle East' },
+  { id: 422, name: 'Lebanon', iso3: 'LBN', region: 'Middle East' },
+  { id: 512, name: 'Oman', iso3: 'OMN', region: 'Middle East' },
+  { id: 414, name: 'Kuwait', iso3: 'KWT', region: 'Middle East' },
+  { id: 634, name: 'Qatar', iso3: 'QAT', region: 'Middle East' },
+  { id: 48, name: 'Bahrain', iso3: 'BHR', region: 'Middle East' },
+  { id: 887, name: 'Yemen', iso3: 'YEM', region: 'Middle East' },
+  { id: 760, name: 'Syria', iso3: 'SYR', region: 'Middle East' },
+
+  // Central Asia
+  { id: 398, name: 'Kazakhstan', iso3: 'KAZ', region: 'Central Asia' },
+  { id: 860, name: 'Uzbekistan', iso3: 'UZB', region: 'Central Asia' },
 
   // Europe - Western
   { id: 276, name: 'Germany', iso3: 'DEU', region: 'Western Europe' },
@@ -44,12 +62,17 @@ export const countries: Country[] = [
   { id: 372, name: 'Ireland', iso3: 'IRL', region: 'Western Europe' },
   { id: 620, name: 'Portugal', iso3: 'PRT', region: 'Western Europe' },
   { id: 300, name: 'Greece', iso3: 'GRC', region: 'Western Europe' },
+  { id: 442, name: 'Luxembourg', iso3: 'LUX', region: 'Western Europe' },
 
   // Europe - Northern
   { id: 752, name: 'Sweden', iso3: 'SWE', region: 'Northern Europe' },
   { id: 578, name: 'Norway', iso3: 'NOR', region: 'Northern Europe' },
   { id: 208, name: 'Denmark', iso3: 'DNK', region: 'Northern Europe' },
   { id: 246, name: 'Finland', iso3: 'FIN', region: 'Northern Europe' },
+  { id: 352, name: 'Iceland', iso3: 'ISL', region: 'Northern Europe' },
+  { id: 233, name: 'Estonia', iso3: 'EST', region: 'Northern Europe' },
+  { id: 428, name: 'Latvia', iso3: 'LVA', region: 'Northern Europe' },
+  { id: 440, name: 'Lithuania', iso3: 'LTU', region: 'Northern Europe' },
 
   // Europe - Eastern
   { id: 616, name: 'Poland', iso3: 'POL', region: 'Eastern Europe' },
@@ -58,12 +81,25 @@ export const countries: Country[] = [
   { id: 203, name: 'Czech Republic', iso3: 'CZE', region: 'Eastern Europe' },
   { id: 348, name: 'Hungary', iso3: 'HUN', region: 'Eastern Europe' },
   { id: 643, name: 'Russia', iso3: 'RUS', region: 'Eastern Europe' },
+  { id: 100, name: 'Bulgaria', iso3: 'BGR', region: 'Eastern Europe' },
+  { id: 688, name: 'Serbia', iso3: 'SRB', region: 'Eastern Europe' },
+  { id: 191, name: 'Croatia', iso3: 'HRV', region: 'Eastern Europe' },
+  { id: 703, name: 'Slovakia', iso3: 'SVK', region: 'Eastern Europe' },
+  { id: 112, name: 'Belarus', iso3: 'BLR', region: 'Eastern Europe' },
+  { id: 268, name: 'Georgia', iso3: 'GEO', region: 'Eastern Europe' },
+  { id: 498, name: 'Moldova', iso3: 'MDA', region: 'Eastern Europe' },
+  { id: 8, name: 'Albania', iso3: 'ALB', region: 'Eastern Europe' },
 
   // North America
   { id: 840, name: 'United States', iso3: 'USA', region: 'North America' },
   { id: 124, name: 'Canada', iso3: 'CAN', region: 'North America' },
   { id: 484, name: 'Mexico', iso3: 'MEX', region: 'North America' },
   { id: 192, name: 'Cuba', iso3: 'CUB', region: 'North America' },
+  { id: 320, name: 'Guatemala', iso3: 'GTM', region: 'North America' },
+  { id: 340, name: 'Honduras', iso3: 'HND', region: 'North America' },
+  { id: 214, name: 'Dominican Republic', iso3: 'DOM', region: 'North America' },
+  { id: 332, name: 'Haiti', iso3: 'HTI', region: 'North America' },
+  { id: 388, name: 'Jamaica', iso3: 'JAM', region: 'North America' },
 
   // South America
   { id: 76, name: 'Brazil', iso3: 'BRA', region: 'South America' },
@@ -72,10 +108,17 @@ export const countries: Country[] = [
   { id: 604, name: 'Peru', iso3: 'PER', region: 'South America' },
   { id: 862, name: 'Venezuela', iso3: 'VEN', region: 'South America' },
   { id: 152, name: 'Chile', iso3: 'CHL', region: 'South America' },
+  { id: 218, name: 'Ecuador', iso3: 'ECU', region: 'South America' },
+  { id: 68, name: 'Bolivia', iso3: 'BOL', region: 'South America' },
+  { id: 600, name: 'Paraguay', iso3: 'PRY', region: 'South America' },
+  { id: 858, name: 'Uruguay', iso3: 'URY', region: 'South America' },
 
   // Africa - North
   { id: 504, name: 'Morocco', iso3: 'MAR', region: 'North Africa' },
   { id: 12, name: 'Algeria', iso3: 'DZA', region: 'North Africa' },
+  { id: 788, name: 'Tunisia', iso3: 'TUN', region: 'North Africa' },
+  { id: 434, name: 'Libya', iso3: 'LBY', region: 'North Africa' },
+  { id: 736, name: 'Sudan', iso3: 'SDN', region: 'North Africa' },
 
   // Africa - Sub-Saharan
   { id: 566, name: 'Nigeria', iso3: 'NGA', region: 'Sub-Saharan Africa' },
@@ -89,10 +132,19 @@ export const countries: Country[] = [
   { id: 450, name: 'Madagascar', iso3: 'MDG', region: 'Sub-Saharan Africa' },
   { id: 24, name: 'Angola', iso3: 'AGO', region: 'Sub-Saharan Africa' },
   { id: 120, name: 'Cameroon', iso3: 'CMR', region: 'Sub-Saharan Africa' },
+  { id: 800, name: 'Uganda', iso3: 'UGA', region: 'Sub-Saharan Africa' },
+  { id: 686, name: 'Senegal', iso3: 'SEN', region: 'Sub-Saharan Africa' },
+  { id: 716, name: 'Zimbabwe', iso3: 'ZWE', region: 'Sub-Saharan Africa' },
+  { id: 562, name: 'Niger', iso3: 'NER', region: 'Sub-Saharan Africa' },
+  { id: 466, name: 'Mali', iso3: 'MLI', region: 'Sub-Saharan Africa' },
+  { id: 854, name: 'Burkina Faso', iso3: 'BFA', region: 'Sub-Saharan Africa' },
+  { id: 148, name: 'Chad', iso3: 'TCD', region: 'Sub-Saharan Africa' },
+  { id: 706, name: 'Somalia', iso3: 'SOM', region: 'Sub-Saharan Africa' },
 
   // Oceania
   { id: 36, name: 'Australia', iso3: 'AUS', region: 'Oceania' },
   { id: 554, name: 'New Zealand', iso3: 'NZL', region: 'Oceania' },
+  { id: 598, name: 'Papua New Guinea', iso3: 'PNG', region: 'Oceania' },
 ];
 
 export const regions = [...new Set(countries.map(c => c.region))];
@@ -106,15 +158,25 @@ export const countriesAlphabetic = [...countries].sort((a, b) => a.name.localeCo
 
 // ISO3 → ISO2 mapping for flag emoji generation
 const iso3to2: Record<string, string> = {
-  AFG:'AF',AGO:'AO',ARE:'AE',ARG:'AR',AUS:'AU',AUT:'AT',BEL:'BE',BGD:'BD',
-  BRA:'BR',CHE:'CH',CHL:'CL',CHN:'CN',CMR:'CM',COD:'CD',COL:'CO',CRI:'CR',
-  CUB:'CU',CZE:'CZ',DEU:'DE',DNK:'DK',EGY:'EG',ESP:'ES',ETH:'ET',FIN:'FI',
-  FRA:'FR',GBR:'GB',GHA:'GH',GRC:'GR',HUN:'HU',IDN:'ID',IND:'IN',IRL:'IE',
-  IRN:'IR',IRQ:'IQ',ISR:'IL',ITA:'IT',JPN:'JP',KEN:'KE',KOR:'KR',MAR:'MA',
-  MDG:'MG',MEX:'MX',MMR:'MM',MOZ:'MZ',MYS:'MY',NGA:'NG',NLD:'NL',NOR:'NO',
-  NZL:'NZ',PAK:'PK',PER:'PE',PHL:'PH',POL:'PL',PRT:'PT',ROU:'RO',RUS:'RU',
-  SAU:'SA',SGP:'SG',SWE:'SE',THA:'TH',TUR:'TR',TWN:'TW',TZA:'TZ',UKR:'UA',
-  USA:'US',VEN:'VE',VNM:'VN',ZAF:'ZA',DZA:'DZ',CAN:'CA',
+  AFG:'AF',AGO:'AO',ALB:'AL',ARE:'AE',ARG:'AR',AUS:'AU',AUT:'AT',BEL:'BE',
+  BFA:'BF',BGD:'BD',BGR:'BG',BHR:'BH',BLR:'BY',BOL:'BO',BRA:'BR',
+  CAN:'CA',CHE:'CH',CHL:'CL',CHN:'CN',CMR:'CM',COD:'CD',COL:'CO',
+  CUB:'CU',CZE:'CZ',DEU:'DE',DNK:'DK',DOM:'DO',DZA:'DZ',
+  ECU:'EC',EGY:'EG',ESP:'ES',EST:'EE',ETH:'ET',FIN:'FI',FRA:'FR',
+  GBR:'GB',GEO:'GE',GHA:'GH',GRC:'GR',GTM:'GT',
+  HND:'HN',HRV:'HR',HTI:'HT',HUN:'HU',
+  IDN:'ID',IND:'IN',IRL:'IE',IRN:'IR',IRQ:'IQ',ISL:'IS',ISR:'IL',ITA:'IT',
+  JAM:'JM',JOR:'JO',JPN:'JP',
+  KAZ:'KZ',KEN:'KE',KHM:'KH',KOR:'KR',KWT:'KW',
+  LAO:'LA',LBN:'LB',LBY:'LY',LKA:'LK',LTU:'LT',LUX:'LU',LVA:'LV',
+  MAR:'MA',MDA:'MD',MDG:'MG',MEX:'MX',MLI:'ML',MMR:'MM',MNG:'MN',MOZ:'MZ',MYS:'MY',
+  NER:'NE',NGA:'NG',NLD:'NL',NOR:'NO',NPL:'NP',NZL:'NZ',
+  OMN:'OM',PAK:'PK',PER:'PE',PHL:'PH',PNG:'PG',POL:'PL',PRK:'KP',PRT:'PT',PRY:'PY',
+  QAT:'QA',ROU:'RO',RUS:'RU',
+  SAU:'SA',SDN:'SD',SEN:'SN',SGP:'SG',SOM:'SO',SRB:'RS',SVK:'SK',SWE:'SE',SYR:'SY',
+  TCD:'TD',THA:'TH',TUN:'TN',TUR:'TR',TWN:'TW',TZA:'TZ',
+  UGA:'UG',UKR:'UA',URY:'UY',USA:'US',UZB:'UZ',
+  VEN:'VE',VNM:'VN',YEM:'YE',ZAF:'ZA',ZWE:'ZW',
 };
 
 export function findCountryByIso3(iso3: string): Country | undefined {
