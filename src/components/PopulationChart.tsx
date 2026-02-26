@@ -14,11 +14,15 @@ interface DualAxisChartProps {
   maxYear: number;
   popDataB?: TimeSeriesPoint[];
   tfrDataB?: TimeSeriesPoint[];
-  // TFR editing mode props
+  // TFR editing mode props (active scenario)
   tfrEditMode?: 'convergence' | 'custom';
   tfrControlPoints?: SplinePoint[];
   onTfrControlPointsChange?: (points: SplinePoint[]) => void;
   tfrSplinePath?: SplinePoint[];
+  // Both spline paths for rendering in compare mode
+  tfrSplinePathB?: SplinePoint[];
+  tfrEditModeA?: 'convergence' | 'custom';
+  tfrSplinePathA?: SplinePoint[];
 }
 
 // Chart padding constants (shared between canvas and SVG overlay)
@@ -48,6 +52,9 @@ export function DualAxisChart({
   tfrControlPoints,
   onTfrControlPointsChange,
   tfrSplinePath,
+  tfrSplinePathB,
+  tfrEditModeA = 'convergence',
+  tfrSplinePathA,
 }: DualAxisChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -225,10 +232,8 @@ export function DualAxisChart({
       drawLine(popData, yPop, popColor);
     }
 
-    // Draw TFR line (only in convergence mode — custom mode draws the spline instead)
-    if (tfrEditMode !== 'custom') {
-      drawLine(tfrData, yTfr, tfrColor, true);
-    }
+    // Draw TFR actual history line (always — shows simulated TFR values)
+    drawLine(tfrData, yTfr, tfrColor, true);
 
     // Draw scenario B lines
     if (popDataB && popDataB.length >= 2) {
@@ -238,15 +243,31 @@ export function DualAxisChart({
       drawLine(tfrDataB, yTfr, tfrColorB, true);
     }
 
-    // Draw the custom TFR spline path on canvas (dashed blue line)
-    if (tfrEditMode === 'custom' && tfrSplinePath && tfrSplinePath.length >= 2) {
+    // Draw the custom TFR spline path overlays (future trajectories)
+    // In compare mode, draw A spline path (orange) independently of active scenario
+    const splinePathAToRender = tfrSplinePathA ?? (tfrEditModeA === 'custom' ? tfrSplinePath : undefined);
+    if (tfrEditModeA === 'custom' && splinePathAToRender && splinePathAToRender.length >= 2) {
       ctx.beginPath();
-      ctx.moveTo(xScale(tfrSplinePath[0].year), yTfr(tfrSplinePath[0].tfr));
-      // Draw every few years for smoothness but not too many line segments
-      for (let i = 1; i < tfrSplinePath.length; i++) {
-        ctx.lineTo(xScale(tfrSplinePath[i].year), yTfr(tfrSplinePath[i].tfr));
+      ctx.moveTo(xScale(splinePathAToRender[0].year), yTfr(splinePathAToRender[0].tfr));
+      for (let i = 1; i < splinePathAToRender.length; i++) {
+        ctx.lineTo(xScale(splinePathAToRender[i].year), yTfr(splinePathAToRender[i].tfr));
       }
       ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw B spline path (purple) in compare mode
+    if (tfrSplinePathB && tfrSplinePathB.length >= 2) {
+      ctx.beginPath();
+      ctx.moveTo(xScale(tfrSplinePathB[0].year), yTfr(tfrSplinePathB[0].tfr));
+      for (let i = 1; i < tfrSplinePathB.length; i++) {
+        ctx.lineTo(xScale(tfrSplinePathB[i].year), yTfr(tfrSplinePathB[i].tfr));
+      }
+      ctx.strokeStyle = '#8b5cf6';
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       ctx.setLineDash([6, 4]);
@@ -291,31 +312,52 @@ export function DualAxisChart({
     const legendY = padTop + 2;
     ctx.font = '600 9px system-ui, sans-serif';
     ctx.textAlign = 'left';
+    const hasB = !!popDataB;
+    let lx = padLeft + 2;
+
+    // Pop A
     ctx.fillStyle = popColor;
-    ctx.fillRect(padLeft + 2, legendY - 4, 10, 2);
-    ctx.fillText('Pop', padLeft + 16, legendY);
-    const tfrLegendX = padLeft + 48;
-    const isCustom = tfrEditMode === 'custom';
-    const tfrLegColor = isCustom ? '#f97316' : tfrColor;
-    ctx.strokeStyle = tfrLegColor;
+    ctx.fillRect(lx, legendY - 4, 10, 2);
+    lx += 14;
+    ctx.fillText(hasB ? 'Pop A' : 'Pop', lx, legendY);
+    lx += ctx.measureText(hasB ? 'Pop A' : 'Pop').width + 10;
+
+    // TFR A
+    ctx.strokeStyle = tfrColor;
     ctx.lineWidth = 2;
-    ctx.setLineDash(isCustom ? [4, 3] : [3, 2]);
+    ctx.setLineDash([3, 2]);
     ctx.beginPath();
-    ctx.moveTo(tfrLegendX, legendY - 3);
-    ctx.lineTo(tfrLegendX + 10, legendY - 3);
+    ctx.moveTo(lx, legendY - 3);
+    ctx.lineTo(lx + 10, legendY - 3);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = tfrLegColor;
-    ctx.fillText(isCustom ? 'TFR Path' : 'TFR', tfrLegendX + 14, legendY);
+    lx += 14;
+    ctx.fillStyle = tfrColor;
+    ctx.fillText(hasB ? 'TFR A' : 'TFR', lx, legendY);
+    lx += ctx.measureText(hasB ? 'TFR A' : 'TFR').width + 10;
 
-    if (popDataB) {
-      const bLegendX = isCustom ? padLeft + 110 : padLeft + 90;
+    // Scenario B
+    if (hasB) {
       ctx.fillStyle = popColorB;
-      ctx.fillRect(bLegendX, legendY - 4, 10, 2);
-      ctx.fillText('B', bLegendX + 14, legendY);
+      ctx.fillRect(lx, legendY - 4, 10, 2);
+      lx += 14;
+      ctx.fillText('Pop B', lx, legendY);
+      lx += ctx.measureText('Pop B').width + 10;
+
+      ctx.strokeStyle = tfrColorB;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(lx, legendY - 3);
+      ctx.lineTo(lx + 10, legendY - 3);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      lx += 14;
+      ctx.fillStyle = tfrColorB;
+      ctx.fillText('TFR B', lx, legendY);
     }
 
-  }, [popData, tfrData, currentYear, baseYear, maxYear, popDataB, tfrDataB, canvasSize, tfrEditMode, tfrSplinePath]);
+  }, [popData, tfrData, currentYear, baseYear, maxYear, popDataB, tfrDataB, canvasSize, tfrEditMode, tfrSplinePath, tfrSplinePathB, tfrEditModeA, tfrSplinePathA]);
 
   // SVG overlay interaction handlers
   const handleSvgClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
@@ -434,6 +476,8 @@ export function DualAxisChart({
   }) : [];
 
   const isCustomMode = tfrEditMode === 'custom';
+  // Control point color matches active scenario's path color
+  const cpColor = (tfrSplinePathB && tfrSplinePath === tfrSplinePathB) ? '#8b5cf6' : '#f97316';
 
   return (
     <div ref={containerRef} className="relative flex flex-col h-full min-h-0">
@@ -466,7 +510,7 @@ export function DualAxisChart({
                 cy={pt.y}
                 r={6}
                 fill="white"
-                stroke="#f97316"
+                stroke={cpColor}
                 strokeWidth={2}
                 style={{ cursor: idx === 0 ? 'ns-resize' : 'grab', pointerEvents: 'none' }}
               />
@@ -485,6 +529,19 @@ export function DualAxisChart({
               )}
             </g>
           ))}
+
+          {/* Hint: how to delete control points */}
+          {!tooltipInfo && controlPointPositions.length > 1 && (
+            <text
+              x={PAD_LEFT + 2}
+              y={PAD_TOP + 14}
+              fontSize="8"
+              fill="#94a3b8"
+              style={{ pointerEvents: 'none', userSelect: 'none' }}
+            >
+              Double-click a point to remove it
+            </text>
+          )}
 
           {/* Tooltip while dragging */}
           {tooltipInfo && (

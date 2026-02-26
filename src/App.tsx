@@ -139,6 +139,8 @@ export default function App() {
   const [bMortalityImprovementRate, setBMortalityImprovementRate] = useState(0);
   const [bNetMigrationRate, setBNetMigrationRate] = useState(0);
   const [bAsfrShiftYears, setBAsfrShiftYears] = useState(0);
+  const [bTfrEditMode, setBTfrEditMode] = useState<'convergence' | 'custom'>('convergence');
+  const [bTfrControlPoints, setBTfrControlPoints] = useState<SplinePoint[]>([]);
 
   const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pyramidRef = useRef<SVGSVGElement>(null);
@@ -156,6 +158,8 @@ export default function App() {
   const activeUserSexRatio = isB ? bUserSexRatio : userSexRatio;
   const activeNetMigrationRate = isB ? bNetMigrationRate : netMigrationRate;
   const activeAsfrShiftYears = isB ? bAsfrShiftYears : asfrShiftYears;
+  const activeTfrEditMode = isB ? bTfrEditMode : tfrEditMode;
+  const activeTfrControlPoints = isB ? bTfrControlPoints : tfrControlPoints;
 
   const effectiveTFR = activeUserTFR ?? baseTFR;
   const effectiveSexRatio = activeUserSexRatio ?? baseSexRatio;
@@ -165,6 +169,13 @@ export default function App() {
     if (tfrEditMode !== 'custom' || tfrControlPoints.length === 0) return undefined;
     return interpolateSpline(tfrControlPoints, BASE_YEAR, MAX_YEAR);
   }, [tfrEditMode, tfrControlPoints]);
+
+  const tfrSplinePathB = useMemo(() => {
+    if (bTfrEditMode !== 'custom' || bTfrControlPoints.length === 0) return undefined;
+    return interpolateSpline(bTfrControlPoints, BASE_YEAR, MAX_YEAR);
+  }, [bTfrEditMode, bTfrControlPoints]);
+
+  const activeTfrSplinePath = isB ? tfrSplinePathB : tfrSplinePath;
 
   const simParams: SimulationParams = {
     userTFR: userTFR ?? undefined,
@@ -185,6 +196,7 @@ export default function App() {
     mortalityImprovementRate: bMortalityImprovementRate,
     netMigrationRate: bNetMigrationRate,
     asfrShiftYears: bAsfrShiftYears,
+    ...(bTfrEditMode === 'custom' && tfrSplinePathB ? { tfrPath: tfrSplinePathB } : {}),
   };
 
   const effectiveDisplayTFR = currentSnapshot?.currentTFR ?? effectiveTFR;
@@ -234,6 +246,8 @@ export default function App() {
     setBMortalityImprovementRate(0);
     setBNetMigrationRate(0);
     setBAsfrShiftYears(0);
+    setBTfrEditMode('convergence');
+    setBTfrControlPoints([]);
     setLoading(true);
 
     try {
@@ -448,25 +462,81 @@ export default function App() {
   }, [isB, simParams, simParamsB, resimulate, resimulateB]);
 
   const handleTfrEditModeChange = useCallback((mode: 'convergence' | 'custom') => {
-    setTfrEditMode(mode);
-    if (mode === 'custom' && tfrControlPoints.length === 0 && baseSnapshot) {
-      // Initialize with anchor point at base year with the country's base TFR
-      const bTFR = computeBaseTFR(baseSnapshot.asfr);
-      setTfrControlPoints([{ year: BASE_YEAR, tfr: bTFR }]);
+    if (isB) {
+      setBTfrEditMode(mode);
+      if (mode === 'custom' && bTfrControlPoints.length === 0 && baseSnapshot) {
+        const bTFR = computeBaseTFR(baseSnapshot.asfr);
+        setBTfrControlPoints([{ year: BASE_YEAR, tfr: bTFR }]);
+      }
+      if (mode === 'convergence') {
+        if (currentSnapshot && baseSnapshot) {
+          const yearsForward = currentSnapshot.year - BASE_YEAR;
+          if (yearsForward > 0) {
+            const params: SimulationParams = {
+              userTFR: bUserTFR ?? undefined,
+              mortalityMultiplier: bMortalityMultiplier,
+              userSexRatio: bUserSexRatio ?? undefined,
+              tfrConvergenceRate: bTfrConvergenceYears === 0 ? 1 : 1 - Math.pow(0.05, 1 / bTfrConvergenceYears),
+              mortalityImprovementRate: bMortalityImprovementRate,
+              netMigrationRate: bNetMigrationRate,
+              asfrShiftYears: bAsfrShiftYears,
+            };
+            resimulateB(params);
+          }
+        }
+      }
+    } else {
+      setTfrEditMode(mode);
+      if (mode === 'custom' && tfrControlPoints.length === 0 && baseSnapshot) {
+        const bTFR = computeBaseTFR(baseSnapshot.asfr);
+        setTfrControlPoints([{ year: BASE_YEAR, tfr: bTFR }]);
+      }
+      if (mode === 'convergence') {
+        if (currentSnapshot && baseSnapshot) {
+          const yearsForward = currentSnapshot.year - BASE_YEAR;
+          if (yearsForward > 0) {
+            const params: SimulationParams = {
+              userTFR: userTFR ?? undefined,
+              mortalityMultiplier,
+              userSexRatio: userSexRatio ?? undefined,
+              tfrConvergenceRate: tfrConvergenceYears === 0 ? 1 : 1 - Math.pow(0.05, 1 / tfrConvergenceYears),
+              mortalityImprovementRate,
+              netMigrationRate,
+              asfrShiftYears,
+            };
+            const { ph, th, final } = buildHistory(baseSnapshot, yearsForward, params);
+            setCurrentSnapshot(final);
+            setPopHistory(ph);
+            setTfrHistory(th);
+          }
+        }
+      }
     }
-    if (mode === 'convergence') {
-      // When switching back to convergence, resimulate without tfrPath
-      if (currentSnapshot && baseSnapshot) {
+  }, [isB, tfrControlPoints, bTfrControlPoints, baseSnapshot, currentSnapshot, userTFR, mortalityMultiplier, userSexRatio, tfrConvergenceYears, mortalityImprovementRate, netMigrationRate, asfrShiftYears, bUserTFR, bMortalityMultiplier, bUserSexRatio, bTfrConvergenceYears, bMortalityImprovementRate, bNetMigrationRate, bAsfrShiftYears, buildHistory, resimulateB]);
+
+  const handleTfrControlPointsChange = useCallback((points: SplinePoint[]) => {
+    if (isB) {
+      setBTfrControlPoints(points);
+      if (baseSnapshot && currentSnapshot) {
         const yearsForward = currentSnapshot.year - BASE_YEAR;
         if (yearsForward > 0) {
+          const newPath = interpolateSpline(points, BASE_YEAR, MAX_YEAR);
           const params: SimulationParams = {
-            userTFR: userTFR ?? undefined,
-            mortalityMultiplier,
-            userSexRatio: userSexRatio ?? undefined,
-            tfrConvergenceRate: tfrConvergenceYears === 0 ? 1 : 1 - Math.pow(0.05, 1 / tfrConvergenceYears),
-            mortalityImprovementRate,
-            netMigrationRate,
-            asfrShiftYears,
+            ...simParamsB,
+            tfrPath: newPath,
+          };
+          resimulateB(params);
+        }
+      }
+    } else {
+      setTfrControlPoints(points);
+      if (baseSnapshot && currentSnapshot) {
+        const yearsForward = currentSnapshot.year - BASE_YEAR;
+        if (yearsForward > 0) {
+          const newPath = interpolateSpline(points, BASE_YEAR, MAX_YEAR);
+          const params: SimulationParams = {
+            ...simParams,
+            tfrPath: newPath,
           };
           const { ph, th, final } = buildHistory(baseSnapshot, yearsForward, params);
           setCurrentSnapshot(final);
@@ -475,26 +545,7 @@ export default function App() {
         }
       }
     }
-  }, [tfrControlPoints, baseSnapshot, currentSnapshot, userTFR, mortalityMultiplier, userSexRatio, tfrConvergenceYears, mortalityImprovementRate, netMigrationRate, asfrShiftYears, buildHistory]);
-
-  const handleTfrControlPointsChange = useCallback((points: SplinePoint[]) => {
-    setTfrControlPoints(points);
-    // Resimulate with new spline path
-    if (baseSnapshot && currentSnapshot) {
-      const yearsForward = currentSnapshot.year - BASE_YEAR;
-      if (yearsForward > 0) {
-        const newPath = interpolateSpline(points, BASE_YEAR, MAX_YEAR);
-        const params: SimulationParams = {
-          ...simParams,
-          tfrPath: newPath,
-        };
-        const { ph, th, final } = buildHistory(baseSnapshot, yearsForward, params);
-        setCurrentSnapshot(final);
-        setPopHistory(ph);
-        setTfrHistory(th);
-      }
-    }
-  }, [baseSnapshot, currentSnapshot, simParams, buildHistory]);
+  }, [isB, baseSnapshot, currentSnapshot, simParams, simParamsB, buildHistory, resimulateB]);
 
   const handleApplyScenario = useCallback(async (scenario: Scenario) => {
     const p = scenario.params;
@@ -576,11 +627,13 @@ export default function App() {
         setBMortalityImprovementRate(mortalityImprovementRate);
         setBNetMigrationRate(netMigrationRate);
         setBAsfrShiftYears(asfrShiftYears);
+        setBTfrEditMode(tfrEditMode);
+        setBTfrControlPoints(tfrControlPoints);
       }
       return !prev;
     });
     setActiveScenario('A');
-  }, [baseSnapshot, currentSnapshot, simParams, userTFR, tfrConvergenceYears, mortalityMultiplier, userSexRatio, mortalityImprovementRate, netMigrationRate, asfrShiftYears, buildHistory]);
+  }, [baseSnapshot, currentSnapshot, simParams, userTFR, tfrConvergenceYears, mortalityMultiplier, userSexRatio, mortalityImprovementRate, netMigrationRate, asfrShiftYears, tfrEditMode, tfrControlPoints, buildHistory]);
 
   // Playback effect with 200-year cap
   useEffect(() => {
@@ -817,7 +870,7 @@ export default function App() {
     onCompareModeToggle: handleCompareModeToggle,
     activeScenario,
     onActiveScenarioChange: setActiveScenario,
-    tfrEditMode,
+    tfrEditMode: activeTfrEditMode,
     onTfrEditModeChange: handleTfrEditModeChange,
   };
 
@@ -1014,10 +1067,13 @@ export default function App() {
                       maxYear={MAX_YEAR}
                       popDataB={compareMode ? scenarioBPopHistory : undefined}
                       tfrDataB={compareMode ? scenarioBTfrHistory : undefined}
-                      tfrEditMode={tfrEditMode}
-                      tfrControlPoints={tfrControlPoints}
+                      tfrEditMode={activeTfrEditMode}
+                      tfrControlPoints={activeTfrControlPoints}
                       onTfrControlPointsChange={handleTfrControlPointsChange}
-                      tfrSplinePath={tfrSplinePath}
+                      tfrSplinePath={activeTfrSplinePath}
+                      tfrSplinePathB={compareMode ? tfrSplinePathB : undefined}
+                      tfrEditModeA={tfrEditMode}
+                      tfrSplinePathA={tfrSplinePath}
                     />
                   </div>
                   {baseSnapshot && effectiveASFR.length > 0 && (
