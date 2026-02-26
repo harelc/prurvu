@@ -11,7 +11,7 @@ import type { TimeSeriesPoint } from './components/PopulationChart';
 import { LoadingState, ErrorState } from './components/LoadingState';
 import { HowItWorks } from './components/HowItWorks';
 import { ASFRChart } from './components/ASFRChart';
-import { findCountryByIso3 } from './data/countries';
+import { findCountryByIso3, countriesByRegion, countryFlag } from './data/countries';
 import type { Scenario } from './data/scenarios';
 import { exportPyramidPNG, exportPopulationCSV, exportTimeSeriesCSV } from './utils/export';
 import type { PNGExportMeta } from './utils/export';
@@ -753,6 +753,68 @@ export default function App() {
 
         {/* Main content */}
         <main className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto md:overflow-hidden p-3 md:p-6">
+          {/* Mobile country selector — always visible on small screens */}
+          <div className="md:hidden mb-2 shrink-0">
+            <select
+              value={country?.id ?? ''}
+              onChange={e => {
+                const id = Number(e.target.value);
+                for (const group of countriesByRegion) {
+                  const found = group.countries.find(c => c.id === id);
+                  if (found) { handleSelectCountry(found); break; }
+                }
+              }}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm"
+            >
+              <option value="" disabled>Select a country...</option>
+              {countriesByRegion.map(group => (
+                <optgroup key={group.region} label={group.region}>
+                  {group.countries.filter(c => cachedCountryIds.has(c.id)).map(c => (
+                    <option key={c.id} value={c.id}>{countryFlag(c.iso3)} {c.name}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+
+          {/* Mobile playback bar — always visible on small screens */}
+          {currentSnapshot && (
+            <div className="md:hidden flex items-center justify-center gap-2 mb-2 shrink-0 rounded-xl border border-slate-200 bg-slate-50/50 backdrop-blur px-3 py-1.5 shadow-sm">
+              <button
+                onClick={handleReset}
+                disabled={currentSnapshot.year <= BASE_YEAR || loading}
+                className="rounded-lg p-2 border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 disabled:opacity-30 transition-colors"
+                title="Reset"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              </button>
+              <button
+                onClick={handleStepBack}
+                disabled={currentSnapshot.year <= BASE_YEAR || playing || loading}
+                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-30 transition-colors"
+                title="Step back"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button
+                onClick={handleTogglePlay}
+                disabled={loading}
+                className={`rounded-lg px-4 py-1.5 text-sm font-bold shadow-sm transition-colors ${playing ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                {playing ? 'Pause' : 'Play'}
+              </button>
+              <button
+                onClick={handleStepForward}
+                disabled={playing || loading || (currentSnapshot.year >= MAX_YEAR)}
+                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-30 transition-colors"
+                title="Step forward"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+              <span className="text-sm font-semibold tabular-nums text-slate-600 ml-1">{currentSnapshot.year}</span>
+            </div>
+          )}
+
           {loading && <LoadingState message={`Loading data for ${country?.name}...`} />}
 
           {error && (

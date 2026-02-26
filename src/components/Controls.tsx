@@ -268,7 +268,7 @@ export function Controls({
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               Simulation {atMaxYear && <span className="text-amber-500 normal-case">(max year reached)</span>}
             </label>
-            <div className="flex items-center gap-1.5">
+            <div className="hidden md:flex items-center gap-1.5">
               <button
                 onClick={onReset}
                 disabled={year === baseYear || loading}
