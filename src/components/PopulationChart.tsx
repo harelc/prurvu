@@ -225,8 +225,10 @@ export function DualAxisChart({
       drawLine(popData, yPop, popColor);
     }
 
-    // Draw TFR line
-    drawLine(tfrData, yTfr, tfrColor, true);
+    // Draw TFR line (only in convergence mode — custom mode draws the spline instead)
+    if (tfrEditMode !== 'custom') {
+      drawLine(tfrData, yTfr, tfrColor, true);
+    }
 
     // Draw scenario B lines
     if (popDataB && popDataB.length >= 2) {
@@ -244,7 +246,7 @@ export function DualAxisChart({
       for (let i = 1; i < tfrSplinePath.length; i++) {
         ctx.lineTo(xScale(tfrSplinePath[i].year), yTfr(tfrSplinePath[i].tfr));
       }
-      ctx.strokeStyle = '#2563eb';
+      ctx.strokeStyle = '#f97316';
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       ctx.setLineDash([6, 4]);
@@ -293,37 +295,24 @@ export function DualAxisChart({
     ctx.fillRect(padLeft + 2, legendY - 4, 10, 2);
     ctx.fillText('Pop', padLeft + 16, legendY);
     const tfrLegendX = padLeft + 48;
-    ctx.fillStyle = tfrColor;
-    ctx.setLineDash([3, 2]);
+    const isCustom = tfrEditMode === 'custom';
+    const tfrLegColor = isCustom ? '#f97316' : tfrColor;
+    ctx.strokeStyle = tfrLegColor;
+    ctx.lineWidth = 2;
+    ctx.setLineDash(isCustom ? [4, 3] : [3, 2]);
     ctx.beginPath();
     ctx.moveTo(tfrLegendX, legendY - 3);
     ctx.lineTo(tfrLegendX + 10, legendY - 3);
-    ctx.strokeStyle = tfrColor;
-    ctx.lineWidth = 2;
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillText('TFR', tfrLegendX + 14, legendY);
+    ctx.fillStyle = tfrLegColor;
+    ctx.fillText(isCustom ? 'TFR Path' : 'TFR', tfrLegendX + 14, legendY);
 
     if (popDataB) {
-      const bLegendX = padLeft + 90;
+      const bLegendX = isCustom ? padLeft + 110 : padLeft + 90;
       ctx.fillStyle = popColorB;
       ctx.fillRect(bLegendX, legendY - 4, 10, 2);
       ctx.fillText('B', bLegendX + 14, legendY);
-    }
-
-    // Custom path legend
-    if (tfrEditMode === 'custom') {
-      const customLegendX = popDataB ? padLeft + 120 : padLeft + 90;
-      ctx.strokeStyle = '#2563eb';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 3]);
-      ctx.beginPath();
-      ctx.moveTo(customLegendX, legendY - 3);
-      ctx.lineTo(customLegendX + 10, legendY - 3);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#2563eb';
-      ctx.fillText('Path', customLegendX + 14, legendY);
     }
 
   }, [popData, tfrData, currentYear, baseYear, maxYear, popDataB, tfrDataB, canvasSize, tfrEditMode, tfrSplinePath]);
@@ -477,7 +466,7 @@ export function DualAxisChart({
                 cy={pt.y}
                 r={6}
                 fill="white"
-                stroke={idx === 0 ? '#f97316' : '#2563eb'}
+                stroke="#f97316"
                 strokeWidth={2}
                 style={{ cursor: idx === 0 ? 'ns-resize' : 'grab', pointerEvents: 'none' }}
               />
