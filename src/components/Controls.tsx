@@ -76,6 +76,8 @@ interface ControlsProps {
   onCompareModeToggle: () => void;
   activeScenario: 'A' | 'B';
   onActiveScenarioChange: (s: 'A' | 'B') => void;
+  tfrEditMode: 'convergence' | 'custom';
+  onTfrEditModeChange: (mode: 'convergence' | 'custom') => void;
 }
 
 export function Controls({
@@ -112,6 +114,8 @@ export function Controls({
   onCompareModeToggle,
   activeScenario,
   onActiveScenarioChange,
+  tfrEditMode,
+  onTfrEditModeChange,
 }: ControlsProps) {
   const [search, setSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -353,57 +357,89 @@ export function Controls({
             </div>
           </div>
 
-          {/* Target TFR Slider */}
+          {/* TFR Mode Toggle */}
           <div>
-            <label className="mb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              <span className="flex items-center">Target TFR<InfoTip text="The TFR value that will be reached after the 'Time to Target' period. The effective TFR blends gradually from the country's baseline toward this value. 2.1 is replacement level." /></span>
-              <span className="text-sm font-bold tabular-nums text-blue-600">{tfr.toFixed(2)}</span>
+            <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <span className="flex items-center">TFR Mode<InfoTip text="'Convergence' uses a target TFR with gradual transition. 'Custom Path' lets you draw a custom TFR curve on the chart by adding and dragging control points." /></span>
             </label>
-            <input
-              type="range"
-              min="0.5"
-              max="8"
-              step="0.01"
-              value={tfr}
-              onChange={e => onTFRChange(parseFloat(e.target.value))}
-              className="w-full"
-            />
-            <div className="mt-1 flex items-center justify-between text-[10px] text-slate-300">
-              <span>0.5</span>
-              <button
-                onClick={() => onTFRChange(baseTFR)}
-                className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                title="Reset TFR to baseline"
-              >
-                Base: {baseTFR.toFixed(2)} ↺
-              </button>
-              <span>8.0</span>
+            <div className="flex gap-1.5">
+              {([['Convergence', 'convergence'], ['Custom Path', 'custom']] as const).map(([label, mode]) => (
+                <button
+                  key={mode}
+                  onClick={() => onTfrEditModeChange(mode)}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    tfrEditMode === mode
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Time to Target */}
-          <div>
-            <label className="mb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              <span className="flex items-center">Time to Target<InfoTip text="How many years for the effective TFR to reach the target. 'Instant' applies the target immediately. Higher values simulate a gradual demographic transition (95% of the gap closed in N years)." /></span>
-              <span className="text-sm font-bold tabular-nums text-blue-600">
-                {tfrConvergenceYears === 0 ? 'Instant' : `${tfrConvergenceYears} yr`}
-              </span>
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="200"
-              step="1"
-              value={tfrConvergenceYears}
-              onChange={e => onTFRConvergenceYearsChange(parseInt(e.target.value))}
-              className="w-full"
-            />
-            <div className="mt-1 flex justify-between text-[10px] text-slate-300">
-              <span>Instant</span>
-              <span className="text-slate-400">Years to reach target</span>
-              <span>100 yr</span>
+          {tfrEditMode === 'custom' && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] text-blue-700 leading-relaxed">
+              <strong>Custom TFR Path</strong>: Click on the TFR area in the chart to add control points. Drag them to adjust. Right-click or double-click to remove. The first point (base year) is anchored.
             </div>
-          </div>
+          )}
+
+          {/* Target TFR Slider — hidden in custom mode */}
+          {tfrEditMode === 'convergence' && (
+            <div>
+              <label className="mb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                <span className="flex items-center">Target TFR<InfoTip text="The TFR value that will be reached after the 'Time to Target' period. The effective TFR blends gradually from the country's baseline toward this value. 2.1 is replacement level." /></span>
+                <span className="text-sm font-bold tabular-nums text-blue-600">{tfr.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                min="0.5"
+                max="8"
+                step="0.01"
+                value={tfr}
+                onChange={e => onTFRChange(parseFloat(e.target.value))}
+                className="w-full"
+              />
+              <div className="mt-1 flex items-center justify-between text-[10px] text-slate-300">
+                <span>0.5</span>
+                <button
+                  onClick={() => onTFRChange(baseTFR)}
+                  className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                  title="Reset TFR to baseline"
+                >
+                  Base: {baseTFR.toFixed(2)} ↺
+                </button>
+                <span>8.0</span>
+              </div>
+            </div>
+          )}
+
+          {/* Time to Target — hidden in custom mode */}
+          {tfrEditMode === 'convergence' && (
+            <div>
+              <label className="mb-1.5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                <span className="flex items-center">Time to Target<InfoTip text="How many years for the effective TFR to reach the target. 'Instant' applies the target immediately. Higher values simulate a gradual demographic transition (95% of the gap closed in N years)." /></span>
+                <span className="text-sm font-bold tabular-nums text-blue-600">
+                  {tfrConvergenceYears === 0 ? 'Instant' : `${tfrConvergenceYears} yr`}
+                </span>
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="200"
+                step="1"
+                value={tfrConvergenceYears}
+                onChange={e => onTFRConvergenceYearsChange(parseInt(e.target.value))}
+                className="w-full"
+              />
+              <div className="mt-1 flex justify-between text-[10px] text-slate-300">
+                <span>Instant</span>
+                <span className="text-slate-400">Years to reach target</span>
+                <span>100 yr</span>
+              </div>
+            </div>
+          )}
 
           {/* Mortality Multiplier Slider */}
           <div>

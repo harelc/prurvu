@@ -94,7 +94,7 @@ export function exportPyramidPNG(
     ctx.font = '11px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'left';
-    ctx.fillText('Age Pyramid Simulator — prurvu.com', padX, footerY + 26);
+    ctx.fillText('Age Pyramid Simulator — agepyramid.netlify.app', padX, footerY + 26);
 
     // Left: data source
     ctx.font = '10px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';

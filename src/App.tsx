@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { Country, CountrySnapshot } from './types';
 import { fetchAllCountryData, getCachedCountryIds } from './api/unApi';
 import { stepForward, computeBaseTFR, getTotalPopulation, getMedianAge, getDependencyRatio, getEffectiveASFR } from './simulation/engine';
@@ -16,6 +16,8 @@ import type { Scenario } from './data/scenarios';
 import { exportPyramidPNG, exportPopulationCSV, exportTimeSeriesCSV } from './utils/export';
 import type { PNGExportMeta } from './utils/export';
 import { MobileControls } from './components/MobileControls';
+import type { SplinePoint } from './utils/spline';
+import { interpolateSpline } from './utils/spline';
 
 const BASE_YEAR = 2024;
 const MAX_YEAR = 2224; // 200 years into the future
@@ -31,12 +33,23 @@ function encodeStateToHash(params: {
   mortImprove?: number;
   migration?: number;
   asfrShift?: number;
+  tfrMode?: 'convergence' | 'custom';
+  tfrCPs?: { year: number; tfr: number }[];
 }): string {
   const parts: string[] = [];
   if (params.iso3) parts.push(params.iso3);
   if (params.years && params.years > 0) parts.push(`y${params.years}`);
-  if (params.tfr != null) parts.push(`tfr${params.tfr.toFixed(2)}`);
-  if (params.convYears && params.convYears > 0) parts.push(`conv${params.convYears}`);
+  if (params.tfrMode === 'custom') {
+    parts.push('tmod1');
+    if (params.tfrCPs && params.tfrCPs.length > 0) {
+      // Compact format: cp<year>:<tfr>|<year>:<tfr>|...
+      const cpStr = params.tfrCPs.map(p => `${p.year}:${p.tfr.toFixed(2)}`).join('|');
+      parts.push(`cp${cpStr}`);
+    }
+  } else {
+    if (params.tfr != null) parts.push(`tfr${params.tfr.toFixed(2)}`);
+    if (params.convYears && params.convYears > 0) parts.push(`conv${params.convYears}`);
+  }
   if (params.mort != null && params.mort !== 1) parts.push(`mort${params.mort.toFixed(2)}`);
   if (params.sexRatio != null) parts.push(`sr${params.sexRatio.toFixed(2)}`);
   if (params.mortImprove && params.mortImprove > 0) parts.push(`mi${params.mortImprove.toFixed(3)}`);
@@ -55,12 +68,23 @@ function decodeHashToState(hash: string): {
   mortImprove?: number;
   migration?: number;
   asfrShift?: number;
+  tfrMode?: 'convergence' | 'custom';
+  tfrCPs?: { year: number; tfr: number }[];
 } {
   if (!hash || hash.length < 2) return {};
   const parts = hash.slice(1).split(',');
   const result: ReturnType<typeof decodeHashToState> = {};
   for (const p of parts) {
-    if (p.startsWith('y')) result.years = parseInt(p.slice(1));
+    if (p === 'tmod1') result.tfrMode = 'custom';
+    else if (p.startsWith('cp')) {
+      // Parse control points: cp<year>:<tfr>|<year>:<tfr>|...
+      const cpStr = p.slice(2);
+      result.tfrCPs = cpStr.split('|').map(seg => {
+        const [yr, val] = seg.split(':');
+        return { year: parseInt(yr), tfr: parseFloat(val) };
+      }).filter(cp => !isNaN(cp.year) && !isNaN(cp.tfr));
+    }
+    else if (p.startsWith('y')) result.years = parseInt(p.slice(1));
     else if (p.startsWith('tfr')) result.tfr = parseFloat(p.slice(3));
     else if (p.startsWith('conv')) result.convYears = parseInt(p.slice(4));
     else if (p.startsWith('mort')) result.mort = parseFloat(p.slice(4));
@@ -97,6 +121,10 @@ export default function App() {
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [cachedCountryIds, setCachedCountryIds] = useState<Set<number>>(new Set());
 
+  // TFR edit mode
+  const [tfrEditMode, setTfrEditMode] = useState<'convergence' | 'custom'>('convergence');
+  const [tfrControlPoints, setTfrControlPoints] = useState<SplinePoint[]>([]);
+
   // Compare mode
   const [compareMode, setCompareMode] = useState(false);
   const [activeScenario, setActiveScenario] = useState<'A' | 'B'>('A');
@@ -132,6 +160,12 @@ export default function App() {
   const effectiveTFR = activeUserTFR ?? baseTFR;
   const effectiveSexRatio = activeUserSexRatio ?? baseSexRatio;
 
+  // Compute spline path from control points (memoized)
+  const tfrSplinePath = useMemo(() => {
+    if (tfrEditMode !== 'custom' || tfrControlPoints.length === 0) return undefined;
+    return interpolateSpline(tfrControlPoints, BASE_YEAR, MAX_YEAR);
+  }, [tfrEditMode, tfrControlPoints]);
+
   const simParams: SimulationParams = {
     userTFR: userTFR ?? undefined,
     mortalityMultiplier,
@@ -140,6 +174,7 @@ export default function App() {
     mortalityImprovementRate,
     netMigrationRate,
     asfrShiftYears,
+    ...(tfrEditMode === 'custom' && tfrSplinePath ? { tfrPath: tfrSplinePath } : {}),
   };
 
   const simParamsB: SimulationParams = {
@@ -183,6 +218,8 @@ export default function App() {
     setMortalityImprovementRate(0);
     setNetMigrationRate(0);
     setAsfrShiftYears(0);
+    setTfrEditMode('convergence');
+    setTfrControlPoints([]);
     setPopHistory([]);
     setTfrHistory([]);
     setCompareMode(false);
@@ -221,7 +258,22 @@ export default function App() {
         if (pending.migration != null) setNetMigrationRate(pending.migration);
         if (pending.asfrShift != null) setAsfrShiftYears(pending.asfrShift);
 
+        // Apply TFR edit mode and control points from hash
+        if (pending.tfrMode === 'custom') {
+          setTfrEditMode('custom');
+          if (pending.tfrCPs && pending.tfrCPs.length > 0) {
+            setTfrControlPoints(pending.tfrCPs);
+          } else {
+            const bTFR = computeBaseTFR(snap.asfr);
+            setTfrControlPoints([{ year: BASE_YEAR, tfr: bTFR }]);
+          }
+        }
+
         if (pending.years && pending.years > 0) {
+          let tfrPath: { year: number; tfr: number }[] | undefined;
+          if (pending.tfrMode === 'custom' && pending.tfrCPs && pending.tfrCPs.length > 0) {
+            tfrPath = interpolateSpline(pending.tfrCPs, BASE_YEAR, MAX_YEAR);
+          }
           const params: SimulationParams = {
             userTFR: pending.tfr,
             mortalityMultiplier: pending.mort ?? 1,
@@ -232,6 +284,7 @@ export default function App() {
             mortalityImprovementRate: pending.mortImprove ?? 0,
             netMigrationRate: pending.migration ?? 0,
             asfrShiftYears: pending.asfrShift ?? 0,
+            ...(tfrPath ? { tfrPath } : {}),
           };
           const { ph, th, final } = buildHistory(snap, Math.min(pending.years, MAX_YEAR - BASE_YEAR), params);
           setCurrentSnapshot(final);
@@ -393,6 +446,55 @@ export default function App() {
       resimulate({ ...simParams, asfrShiftYears: value });
     }
   }, [isB, simParams, simParamsB, resimulate, resimulateB]);
+
+  const handleTfrEditModeChange = useCallback((mode: 'convergence' | 'custom') => {
+    setTfrEditMode(mode);
+    if (mode === 'custom' && tfrControlPoints.length === 0 && baseSnapshot) {
+      // Initialize with anchor point at base year with the country's base TFR
+      const bTFR = computeBaseTFR(baseSnapshot.asfr);
+      setTfrControlPoints([{ year: BASE_YEAR, tfr: bTFR }]);
+    }
+    if (mode === 'convergence') {
+      // When switching back to convergence, resimulate without tfrPath
+      if (currentSnapshot && baseSnapshot) {
+        const yearsForward = currentSnapshot.year - BASE_YEAR;
+        if (yearsForward > 0) {
+          const params: SimulationParams = {
+            userTFR: userTFR ?? undefined,
+            mortalityMultiplier,
+            userSexRatio: userSexRatio ?? undefined,
+            tfrConvergenceRate: tfrConvergenceYears === 0 ? 1 : 1 - Math.pow(0.05, 1 / tfrConvergenceYears),
+            mortalityImprovementRate,
+            netMigrationRate,
+            asfrShiftYears,
+          };
+          const { ph, th, final } = buildHistory(baseSnapshot, yearsForward, params);
+          setCurrentSnapshot(final);
+          setPopHistory(ph);
+          setTfrHistory(th);
+        }
+      }
+    }
+  }, [tfrControlPoints, baseSnapshot, currentSnapshot, userTFR, mortalityMultiplier, userSexRatio, tfrConvergenceYears, mortalityImprovementRate, netMigrationRate, asfrShiftYears, buildHistory]);
+
+  const handleTfrControlPointsChange = useCallback((points: SplinePoint[]) => {
+    setTfrControlPoints(points);
+    // Resimulate with new spline path
+    if (baseSnapshot && currentSnapshot) {
+      const yearsForward = currentSnapshot.year - BASE_YEAR;
+      if (yearsForward > 0) {
+        const newPath = interpolateSpline(points, BASE_YEAR, MAX_YEAR);
+        const params: SimulationParams = {
+          ...simParams,
+          tfrPath: newPath,
+        };
+        const { ph, th, final } = buildHistory(baseSnapshot, yearsForward, params);
+        setCurrentSnapshot(final);
+        setPopHistory(ph);
+        setTfrHistory(th);
+      }
+    }
+  }, [baseSnapshot, currentSnapshot, simParams, buildHistory]);
 
   const handleApplyScenario = useCallback(async (scenario: Scenario) => {
     const p = scenario.params;
@@ -611,10 +713,12 @@ export default function App() {
         mortImprove: mortalityImprovementRate,
         migration: netMigrationRate,
         asfrShift: asfrShiftYears,
+        tfrMode: tfrEditMode,
+        tfrCPs: tfrEditMode === 'custom' ? tfrControlPoints : undefined,
       });
       window.history.replaceState(null, '', hash || window.location.pathname);
     }, 500);
-  }, [country, currentSnapshot, userTFR, tfrConvergenceYears, mortalityMultiplier, userSexRatio, mortalityImprovementRate, netMigrationRate, asfrShiftYears]);
+  }, [country, currentSnapshot, userTFR, tfrConvergenceYears, mortalityMultiplier, userSexRatio, mortalityImprovementRate, netMigrationRate, asfrShiftYears, tfrEditMode, tfrControlPoints]);
 
   const handleCopyLink = useCallback(() => {
     if (!country || !currentSnapshot) return;
@@ -628,13 +732,15 @@ export default function App() {
       mortImprove: mortalityImprovementRate,
       migration: netMigrationRate,
       asfrShift: asfrShiftYears,
+      tfrMode: tfrEditMode,
+      tfrCPs: tfrEditMode === 'custom' ? tfrControlPoints : undefined,
     });
     const url = window.location.origin + window.location.pathname + hash;
     navigator.clipboard.writeText(url).then(() => {
       setCopyToast(true);
       setTimeout(() => setCopyToast(false), 2000);
     });
-  }, [country, currentSnapshot, userTFR, tfrConvergenceYears, mortalityMultiplier, userSexRatio, mortalityImprovementRate, netMigrationRate, asfrShiftYears]);
+  }, [country, currentSnapshot, userTFR, tfrConvergenceYears, mortalityMultiplier, userSexRatio, mortalityImprovementRate, netMigrationRate, asfrShiftYears, tfrEditMode, tfrControlPoints]);
 
   const handleExportPNG = useCallback(() => {
     if (pyramidRef.current && currentSnapshot) {
@@ -711,6 +817,8 @@ export default function App() {
     onCompareModeToggle: handleCompareModeToggle,
     activeScenario,
     onActiveScenarioChange: setActiveScenario,
+    tfrEditMode,
+    onTfrEditModeChange: handleTfrEditModeChange,
   };
 
   return (
@@ -906,6 +1014,10 @@ export default function App() {
                       maxYear={MAX_YEAR}
                       popDataB={compareMode ? scenarioBPopHistory : undefined}
                       tfrDataB={compareMode ? scenarioBTfrHistory : undefined}
+                      tfrEditMode={tfrEditMode}
+                      tfrControlPoints={tfrControlPoints}
+                      onTfrControlPointsChange={handleTfrControlPointsChange}
+                      tfrSplinePath={tfrSplinePath}
                     />
                   </div>
                   {baseSnapshot && effectiveASFR.length > 0 && (
@@ -932,8 +1044,8 @@ export default function App() {
           <a href="https://github.com/harelc/prurvu" target="_blank" rel="noopener noreferrer" className="hidden sm:inline text-slate-500 hover:text-blue-600 transition-colors">
             Source Code
           </a>
-          <span className="hidden sm:inline">|</span>
-          <a href="https://www.buymeacoffee.com/harelc" target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-1 text-amber-600 hover:text-amber-500 transition-colors align-middle">
+          <span>|</span>
+          <a href="https://www.buymeacoffee.com/harelc" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-500 transition-colors align-middle">
             <img src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg" alt="" className="h-3.5 w-3.5 inline-block align-middle" />
             <span className="align-middle">Buy me a coffee</span>
           </a>

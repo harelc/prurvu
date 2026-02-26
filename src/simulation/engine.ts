@@ -10,6 +10,7 @@ export interface SimulationParams {
   mortalityImprovementRate?: number; // 0–0.03: annual compounding mortality reduction
   netMigrationRate?: number; // -0.02 to +0.02: fraction of total pop per year
   asfrShiftYears?: number; // -5 to +10: shift ASFR age schedule
+  tfrPath?: { year: number; tfr: number }[]; // custom TFR path (overrides userTFR + convergence)
 }
 
 // Simplified Rogers-Castro migration age profile (101 weights, sum ≈ 1.0)
@@ -103,6 +104,7 @@ export function stepForward(
     mortalityImprovementRate = 0,
     netMigrationRate = 0,
     asfrShiftYears = 0,
+    tfrPath,
   } = params;
 
   const { population, asfr, mortality, sexRatio, birthCalibrationFactor } = snapshot;
@@ -115,9 +117,36 @@ export function stepForward(
   const prevImprovement = snapshot.mortalityImprovementAccumulated ?? 1;
   const improvementFactor = prevImprovement * (1 - mortalityImprovementRate);
 
-  // Determine effective TFR with convergence rate
+  // Determine effective TFR
   let effectiveTFR: number;
-  if (userTFR != null) {
+  const nextYear = snapshot.year + 1;
+
+  if (tfrPath && tfrPath.length > 0) {
+    // Custom TFR path mode: look up TFR for this year
+    const exact = tfrPath.find(p => p.year === nextYear);
+    if (exact) {
+      effectiveTFR = exact.tfr;
+    } else {
+      // Find surrounding points and linearly interpolate
+      const sorted = tfrPath;
+      if (nextYear <= sorted[0].year) {
+        effectiveTFR = sorted[0].tfr;
+      } else if (nextYear >= sorted[sorted.length - 1].year) {
+        effectiveTFR = sorted[sorted.length - 1].tfr;
+      } else {
+        let lo = 0;
+        for (let i = 0; i < sorted.length - 1; i++) {
+          if (sorted[i].year <= nextYear && sorted[i + 1].year >= nextYear) {
+            lo = i;
+            break;
+          }
+        }
+        const t = (nextYear - sorted[lo].year) / (sorted[lo + 1].year - sorted[lo].year);
+        effectiveTFR = sorted[lo].tfr + t * (sorted[lo + 1].tfr - sorted[lo].tfr);
+      }
+    }
+  } else if (userTFR != null) {
+    // Convergence mode
     const currentTFR = snapshot.currentTFR ?? snapshot.tfr;
     if (tfrConvergenceRate >= 1) {
       effectiveTFR = userTFR;

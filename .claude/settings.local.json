@@ -11,7 +11,25 @@
       "Bash(npx tsc:*)",
       "Bash(npm run:*)",
       "Bash(git init:*)",
-      "Bash(git add -A && git status 2>&1)"
+      "Bash(git add -A && git status 2>&1)",
+      "Bash(head:*)",
+      "Bash(export VITE_UN_API_TOKEN=\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJoYXJlbC5jYWluQGdtYWlsLmNvbSIsImVtYWlsIjoiaGFyZWwuY2FpbkBnbWFpbC5jb20iLCJ1bmlxdWVfbmFtZSI6ImhhcmVsLmNhaW5AZ21haWwuY29tIiwibmJmIjoxNzcyMDQzMjA0LCJleHAiOjE4MDM1NzkyMDQsImlhdCI6MTc3MjA0MzIwNCwiaXNzIjoiZG90bmV0LXVzZXItand0cyIsImF1ZCI6ImRhdGEtcG9ydGFsLWFwaSJ9.3bncxxYRXCN7us7O_-Boyd3VOUNny8rS81Q7I1MjAbQ\" && npx tsx scripts/fetch-data.ts 2>&1)",
+      "Bash(tail:*)",
+      "Bash(export VITE_UN_API_TOKEN=\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJoYXJlbC5jYWluQGdtYWlsLmNvbSIsImVtYWlsIjoiaGFyZWwuY2FpbkBnbWFpbC5jb20iLCJ1bmlxdWVfbmFtZSI6ImhhcmVsLmNhaW5AZ21haWwuY29tIiwibmJmIjoxNzcyMDQzMjA0LCJleHAiOjE4MDM1NzkyMDQsImlhdCI6MTc3MjA0MzIwNCwiaXNzIjoiZG90bmV0LXVzZXItand0cyIsImF1ZCI6ImRhdGEtcG9ydGFsLWFwaSJ9.3bncxxYRXCN7us7O_-Boyd3VOUNny8rS81Q7I1MjAbQ\" && npx tsx scripts/fetch-data.ts 5 2>&1)",
+      "Bash(curl -s \"https://population.un.org/dataportalapi/swagger/DataPortalOpenAPISpecificationv1.0/swagger.json\" -o /tmp/unwpp/swagger-v1.json 2>&1 && python3 -c \"\nimport json\nwith open\\('/tmp/unwpp/swagger-v1.json'\\) as f:\n    spec = json.load\\(f\\)\n# Print all paths and their parameters\nfor path, methods in spec.get\\('paths', {}\\).items\\(\\):\n    for method, details in methods.items\\(\\):\n        if method in \\('get','post','put','delete'\\):\n            params = details.get\\('parameters', []\\)\n            param_names = [p['name'] for p in params]\n            print\\(f'{method.upper\\(\\)} {path}'\\)\n            print\\(f'  params: {param_names}'\\)\n            print\\(\\)\n\" 2>&1)",
+      "Bash(export VITE_UN_API_TOKEN=\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJoYXJlbC5jYWluQGdtYWlsLmNvbSIsImVtYWlsIjoiaGFyZWwuY2FpbkBnbWFpbC5jb20iLCJ1bmlxdWVfbmFtZSI6ImhhcmVsLmNhaW5AZ21haWwuY29tIiwibmJmIjoxNzcyMDQzMjA0LCJleHAiOjE4MDM1NzkyMDQsImlhdCI6MTc3MjA0MzIwNCwiaXNzIjoiZG90bmV0LXVzZXItand0cyIsImF1ZCI6ImRhdGEtcG9ydGFsLWFwaSJ9.3bncxxYRXCN7us7O_-Boyd3VOUNny8rS81Q7I1MjAbQ\" && rm -f src/data/cached-data.json && npx tsx scripts/fetch-data.ts 5 2>&1)",
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Bash(grep:*)",
+      "Bash(VITE_UN_API_TOKEN=\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJoYXJlbC5jYWluQGdtYWlsLmNvbSIsImVtYWlsIjoiaGFyZWwuY2FpbkBnbWFpbC5jb20iLCJ1bmlxdWVfbmFtZSI6ImhhcmVsLmNhaW5AZ21haWwuY29tIiwibmJmIjoxNzcyMDQzMjA0LCJleHAiOjE4MDM1NzkyMDQsImlhdCI6MTc3MjA0MzIwNCwiaXNzIjoiZG90bmV0LXVzZXItand0cyIsImF1ZCI6ImRhdGEtcG9ydGFsLWFwaSJ9.3bncxxYRXCN7us7O_-Boyd3VOUNny8rS81Q7I1MjAbQ\" npx tsx:*)",
+      "Bash(npx vite:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git:*)",
+      "Bash(test:*)",
+      "Bash(npx tsx:*)",
+      "Bash(gh api:*)"
     ]
   }
 }
